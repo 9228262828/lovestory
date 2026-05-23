@@ -23,7 +23,6 @@ export const useIsCompactViewport = () => {
       setIsCompactViewport(event.matches)
     }
 
-    setIsCompactViewport(mediaQuery.matches)
     mediaQuery.addEventListener('change', handleChange)
 
     return () => {

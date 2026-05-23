@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { ThreeDGalleryCard } from '@/features/sections/components/sections/gallery3d/content'
 
 export interface GalleryCardLayout {
@@ -43,20 +43,6 @@ export const useGalleryDeck = (cards: ThreeDGalleryCard[], isCompactViewport: bo
   }, [cards, isCompactViewport])
 
   const [flippedCardIds, setFlippedCardIds] = useState<Record<string, true>>({})
-
-  useEffect(() => {
-    setFlippedCardIds((previousMap) => {
-      const nextMap: Record<string, true> = {}
-
-      cards.forEach((card) => {
-        if (previousMap[card.id]) {
-          nextMap[card.id] = true
-        }
-      })
-
-      return nextMap
-    })
-  }, [cards])
 
   const toggleCardFlip = useCallback((cardId: string) => {
     setFlippedCardIds((previousMap) => {
