@@ -146,6 +146,7 @@ export const ThreeDRomanticGallerySection = ({ section }: ThreeDRomanticGalleryS
           className="relative mt-8 w-full overflow-hidden rounded-[1.65rem] border border-white/40 bg-white/22 p-4 shadow-inner shadow-rose-200/35 backdrop-blur-[1.5px] [perspective:1400px] sm:mt-10 sm:p-6"
           initial={false}
           animate={{ minHeight: containerMinHeightPx }}
+          style={{ minHeight: containerMinHeightPx }}
           transition={{ duration: reduceMotion ? 0.16 : 0.45, ease: sectionEase }}
         >
           {content.cards.map((card, index) => {
