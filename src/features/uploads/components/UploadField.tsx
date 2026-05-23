@@ -5,11 +5,12 @@ import { storageService } from '@/services/supabase/storage.service'
 interface UploadFieldProps {
   label: string
   target: UploadTarget
-  value: string | null
-  onChange: (value: string | null) => void
+  name: string
+  defaultValue?: string | null
   disabled?: boolean
   helperText?: string
   namespace?: string
+  onValueChange?: (value: string | null) => void
 }
 
 const getErrorMessage = (error: unknown): string => {
@@ -19,11 +20,12 @@ const getErrorMessage = (error: unknown): string => {
 export const UploadField = ({
   label,
   target,
-  value,
-  onChange,
+  name,
+  defaultValue = null,
   disabled = false,
   helperText,
   namespace = 'sections',
+  onValueChange,
 }: UploadFieldProps) => {
   const inputId = useId()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -32,8 +34,16 @@ export const UploadField = ({
   const [isRemoving, setIsRemoving] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [fileUrl, setFileUrl] = useState<string | null>(defaultValue)
   const config = getUploadTargetConfig(target)
   const isBusy = disabled || isUploading || isRemoving
+
+  const updateValue = (nextValue: string | null) => {
+    setFileUrl(nextValue)
+    if (onValueChange) {
+      onValueChange(nextValue)
+    }
+  }
 
   const handleFileUpload = async (file: File) => {
     if (isBusy) {
@@ -51,7 +61,7 @@ export const UploadField = ({
     setIsUploading(true)
 
     try {
-      const previousValue = value
+      const previousValue = fileUrl
       const uploaded = await storageService.uploadFile({
         target,
         file,
@@ -59,7 +69,7 @@ export const UploadField = ({
         onProgress: setUploadProgress,
       })
 
-      onChange(uploaded.publicUrl)
+      updateValue(uploaded.publicUrl)
 
       if (previousValue) {
         void storageService.deleteFile({
@@ -96,8 +106,8 @@ export const UploadField = ({
       return
     }
 
-    if (!value) {
-      onChange(null)
+    if (!fileUrl) {
+      updateValue(null)
       return
     }
 
@@ -105,8 +115,8 @@ export const UploadField = ({
     setIsRemoving(true)
 
     try {
-      await storageService.deleteFile({ target, publicUrl: value })
-      onChange(null)
+      await storageService.deleteFile({ target, publicUrl: fileUrl })
+      updateValue(null)
     } catch (error) {
       setErrorMessage(getErrorMessage(error))
     } finally {
@@ -149,7 +159,7 @@ export const UploadField = ({
         <label htmlFor={inputId} className="text-sm text-zinc-300">
           {label}
         </label>
-        {value ? (
+        {fileUrl ? (
           <button
             type="button"
             onClick={() => {
@@ -191,6 +201,7 @@ export const UploadField = ({
           className="sr-only"
           disabled={isBusy}
         />
+        <input type="hidden" name={name} value={fileUrl ?? ''} />
 
         <div className="space-y-2">
           <p className="text-zinc-200">Drop file here or tap to upload</p>
@@ -211,12 +222,12 @@ export const UploadField = ({
         </div>
       </div>
 
-      {value ? (
+      {fileUrl ? (
         <div className="rounded-lg border border-zinc-700 bg-zinc-950/80 p-2">
           {config.previewKind === 'image' ? (
-            <img src={value} alt={`${label} preview`} className="max-h-52 w-full rounded-md object-cover" loading="lazy" />
+            <img src={fileUrl} alt={`${label} preview`} className="max-h-52 w-full rounded-md object-cover" loading="lazy" />
           ) : (
-            <audio controls src={value} className="w-full" preload="metadata">
+            <audio controls src={fileUrl} className="w-full" preload="metadata">
               Your browser does not support audio preview.
             </audio>
           )}

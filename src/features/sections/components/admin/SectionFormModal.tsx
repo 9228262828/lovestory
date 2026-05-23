@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { UploadField } from '@/features/uploads/components/UploadField'
 import type { SectionUpsertInput } from '@/services/supabase/sections.service'
 import type { JsonValue, RomanticSection } from '@/types/section'
@@ -78,20 +78,6 @@ export const SectionFormModal = ({
   const modalTitle = mode === 'create' ? 'Create section' : 'Edit section'
   const initialValues = buildInitialValues(mode, section, typeOptions, defaultOrderIndex)
   const formInstanceKey = `${mode}-${section?.id ?? 'new'}`
-  const [imageUrl, setImageUrl] = useState<string | null>(initialValues.imageUrl)
-  const [musicUrl, setMusicUrl] = useState<string | null>(initialValues.musicUrl)
-  const [voiceNoteUrl, setVoiceNoteUrl] = useState<string | null>(initialValues.voiceNoteUrl)
-
-  useEffect(() => {
-    if (!isOpen) {
-      return
-    }
-
-    setValidationErrorMessage(null)
-    setImageUrl(initialValues.imageUrl)
-    setMusicUrl(initialValues.musicUrl)
-    setVoiceNoteUrl(initialValues.voiceNoteUrl)
-  }, [formInstanceKey, initialValues.imageUrl, initialValues.musicUrl, initialValues.voiceNoteUrl, isOpen])
 
   if (!isOpen) {
     return null
@@ -153,6 +139,9 @@ export const SectionFormModal = ({
 
             const enabledValue = formData.get('enabled')
             const enabled = enabledValue === 'on' || enabledValue === 'true' || enabledValue === '1'
+            const imageUrl = (formData.get('image_url')?.toString() ?? '').trim() || null
+            const musicUrl = (formData.get('music_url')?.toString() ?? '').trim() || null
+            const voiceNoteUrl = (formData.get('voice_note_url')?.toString() ?? '').trim() || null
 
             void onSubmit({
               title: normalizedTitle,
@@ -222,16 +211,16 @@ export const SectionFormModal = ({
             <UploadField
               label="Image"
               target="image"
-              value={imageUrl}
-              onChange={setImageUrl}
+              name="image_url"
+              defaultValue={initialValues.imageUrl}
               disabled={isSubmitting}
               helperText="Image upload (optional)"
             />
             <UploadField
               label="Music"
               target="music"
-              value={musicUrl}
-              onChange={setMusicUrl}
+              name="music_url"
+              defaultValue={initialValues.musicUrl}
               disabled={isSubmitting}
               helperText="Music upload (optional)"
             />
@@ -240,8 +229,8 @@ export const SectionFormModal = ({
           <UploadField
             label="Voice note"
             target="voice-note"
-            value={voiceNoteUrl}
-            onChange={setVoiceNoteUrl}
+            name="voice_note_url"
+            defaultValue={initialValues.voiceNoteUrl}
             disabled={isSubmitting}
             helperText="Voice-note upload (optional)"
           />
