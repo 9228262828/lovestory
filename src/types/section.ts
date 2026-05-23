@@ -8,7 +8,15 @@ export type JsonValue =
     }
   | JsonValue[]
 
-export type SectionType = 'hero' | 'story' | 'timeline' | 'gallery' | 'custom' | 'cinematic-intro' | '3d-gallery'
+export type SectionType =
+  | 'hero'
+  | 'story'
+  | 'timeline'
+  | 'gallery'
+  | 'custom'
+  | 'cinematic-intro'
+  | '3d-gallery'
+  | 'kiss-counter'
 
 export interface RomanticSection {
   id: string

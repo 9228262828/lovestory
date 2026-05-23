@@ -33,12 +33,48 @@ const buildParticles = (count: number): ParticleState[] => {
 }
 
 const sectionEase: [number, number, number, number] = [0.22, 1, 0.36, 1]
+const DENSE_DECK_BASE_CARD_COUNT = 5
+const DENSE_DECK_FULL_CARD_COUNT = 15
+
+const clamp = (value: number, minimum: number, maximum: number): number => {
+  return Math.max(minimum, Math.min(maximum, value))
+}
+
+const getDeckDensity = (cardCount: number): number => {
+  return clamp(
+    (cardCount - DENSE_DECK_BASE_CARD_COUNT) / (DENSE_DECK_FULL_CARD_COUNT - DENSE_DECK_BASE_CARD_COUNT),
+    0,
+    1,
+  )
+}
+
+const getContainerMinHeightRem = (cardCount: number, isCompactViewport: boolean): number => {
+  const density = getDeckDensity(cardCount)
+  const extraCards = Math.max(cardCount - DENSE_DECK_FULL_CARD_COUNT, 0)
+  const compactBaseHeight = isCompactViewport ? 22 : 30
+  const denseDeckGrowth = isCompactViewport ? 11 : 14
+  const overflowGrowth = isCompactViewport ? 0.85 : 1.1
+
+  return compactBaseHeight + denseDeckGrowth * density + extraCards * overflowGrowth
+}
+
+const getCardScaleFactor = (cardCount: number): number => {
+  const density = getDeckDensity(cardCount)
+  const extraCards = Math.max(cardCount - DENSE_DECK_FULL_CARD_COUNT, 0)
+  return clamp(1 - density * 0.14 - extraCards * 0.01, 0.78, 1)
+}
 
 export const ThreeDRomanticGallerySection = ({ section }: ThreeDRomanticGallerySectionProps) => {
   const reduceMotion = useReducedMotion()
   const isCompactViewport = useIsCompactViewport()
   const dragBoundsRef = useRef<HTMLDivElement | null>(null)
   const content = useMemo(() => resolveThreeDGalleryContent(section), [section])
+  const cardCount = content.cards.length
+  const deckDensity = useMemo(() => getDeckDensity(cardCount), [cardCount])
+  const containerMinHeightPx = useMemo(() => {
+    return Math.round(getContainerMinHeightRem(cardCount, isCompactViewport) * 16)
+  }, [cardCount, isCompactViewport])
+  const cardScaleFactor = useMemo(() => getCardScaleFactor(cardCount), [cardCount])
   const particles = useMemo(() => {
     if (!content.enableParticles) {
       return []
@@ -46,7 +82,7 @@ export const ThreeDRomanticGallerySection = ({ section }: ThreeDRomanticGalleryS
 
     return buildParticles(content.particleCount)
   }, [content.enableParticles, content.particleCount])
-  const { cardLayouts, toggleCardFlip, isCardFlipped } = useGalleryDeck(content.cards, isCompactViewport)
+  const { cardLayouts, toggleCardFlip, isCardFlipped } = useGalleryDeck(content.cards, isCompactViewport, deckDensity)
 
   return (
     <motion.section
@@ -105,9 +141,12 @@ export const ThreeDRomanticGallerySection = ({ section }: ThreeDRomanticGalleryS
           </p>
         </div>
 
-        <div
+        <motion.div
           ref={dragBoundsRef}
-          className="relative mt-8 min-h-[24rem] w-full overflow-hidden rounded-[1.65rem] border border-white/40 bg-white/22 p-4 shadow-inner shadow-rose-200/35 backdrop-blur-[1.5px] [perspective:1400px] sm:mt-10 sm:min-h-[32rem] sm:p-6"
+          className="relative mt-8 w-full overflow-hidden rounded-[1.65rem] border border-white/40 bg-white/22 p-4 shadow-inner shadow-rose-200/35 backdrop-blur-[1.5px] [perspective:1400px] sm:mt-10 sm:p-6"
+          initial={false}
+          animate={{ minHeight: containerMinHeightPx }}
+          transition={{ duration: reduceMotion ? 0.16 : 0.45, ease: sectionEase }}
         >
           {content.cards.map((card, index) => {
             const layout = cardLayouts[index]
@@ -126,11 +165,12 @@ export const ThreeDRomanticGallerySection = ({ section }: ThreeDRomanticGalleryS
                 reduceMotion={reduceMotion}
                 isCompactViewport={isCompactViewport}
                 dragConstraints={dragBoundsRef}
+                sizeScale={cardScaleFactor}
                 onToggleFlip={toggleCardFlip}
               />
             )
           })}
-        </div>
+        </motion.div>
       </div>
     </motion.section>
   )

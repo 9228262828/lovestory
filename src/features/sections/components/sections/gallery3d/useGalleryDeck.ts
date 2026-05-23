@@ -18,10 +18,19 @@ const seededRandom = (seed: number): number => {
   return value - Math.floor(value)
 }
 
-const buildCardLayout = (card: ThreeDGalleryCard, index: number, totalCards: number, isCompactViewport: boolean): GalleryCardLayout => {
-  const spreadX = isCompactViewport ? 74 : 170
-  const spreadY = isCompactViewport ? 50 : 98
-  const stackOffset = (index - (totalCards - 1) / 2) * (isCompactViewport ? 8 : 16)
+const buildCardLayout = (
+  card: ThreeDGalleryCard,
+  index: number,
+  totalCards: number,
+  isCompactViewport: boolean,
+  deckDensity: number,
+): GalleryCardLayout => {
+  const spreadXBase = isCompactViewport ? 74 : 170
+  const spreadYBase = isCompactViewport ? 50 : 98
+  const spreadX = spreadXBase + spreadXBase * 0.55 * deckDensity
+  const spreadY = spreadYBase + spreadYBase * 0.5 * deckDensity
+  const stackStep = (isCompactViewport ? 8 : 16) * (1 + 0.25 * deckDensity)
+  const stackOffset = (index - (totalCards - 1) / 2) * stackStep
   const baseSeed = index + card.id.length * 0.17 + totalCards * 1.9
 
   return {
@@ -37,10 +46,10 @@ const buildCardLayout = (card: ThreeDGalleryCard, index: number, totalCards: num
   }
 }
 
-export const useGalleryDeck = (cards: ThreeDGalleryCard[], isCompactViewport: boolean) => {
+export const useGalleryDeck = (cards: ThreeDGalleryCard[], isCompactViewport: boolean, deckDensity: number) => {
   const cardLayouts = useMemo(() => {
-    return cards.map((card, index) => buildCardLayout(card, index, cards.length, isCompactViewport))
-  }, [cards, isCompactViewport])
+    return cards.map((card, index) => buildCardLayout(card, index, cards.length, isCompactViewport, deckDensity))
+  }, [cards, deckDensity, isCompactViewport])
 
   const [flippedCardIds, setFlippedCardIds] = useState<Record<string, true>>({})
 

@@ -11,6 +11,7 @@ interface Gallery3DCardProps {
   reduceMotion: boolean | null
   isCompactViewport: boolean
   dragConstraints: RefObject<HTMLElement | null>
+  sizeScale: number
   onToggleFlip: (cardId: string) => void
 }
 
@@ -72,6 +73,7 @@ const Gallery3DCardBase = ({
   reduceMotion,
   isCompactViewport,
   dragConstraints,
+  sizeScale,
   onToggleFlip,
 }: Gallery3DCardProps) => {
   const didDragRef = useRef(false)
@@ -164,9 +166,10 @@ const Gallery3DCardBase = ({
           rotateX: layout.tiltX,
           rotateY: isFlipped ? 180 + layout.tiltY : layout.tiltY,
           rotateZ: layout.rotateZ,
+          scale: sizeScale,
         }}
-        whileHover={isReducedMotion ? undefined : { scale: 1.02, rotateZ: layout.rotateZ + 2 }}
-        whileDrag={{ scale: 1.04, rotateZ: 0 }}
+        whileHover={isReducedMotion ? undefined : { scale: Math.min(sizeScale + 0.03, 1.04), rotateZ: layout.rotateZ + 2 }}
+        whileDrag={{ scale: Math.min(sizeScale + 0.05, 1.08), rotateZ: 0 }}
         transition={{
           type: 'spring',
           stiffness: isReducedMotion ? 240 : 165,
