@@ -73,8 +73,35 @@ export const useAdminSections = (): UseAdminSectionsResult => {
   }, [])
 
   useEffect(() => {
-    void reloadSections()
-  }, [reloadSections])
+    let isMounted = true
+
+    const loadSections = async () => {
+      setIsLoading(true)
+      setLoadErrorMessage(null)
+
+      try {
+        const data = await sectionsService.getAllSections()
+
+        if (isMounted) {
+          setSections(sortSections(data))
+        }
+      } catch (error) {
+        if (isMounted) {
+          setLoadErrorMessage(getErrorMessage(error, 'Unable to load section data.'))
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadSections()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const clearMutationError = useCallback(() => {
     setMutationErrorMessage(null)

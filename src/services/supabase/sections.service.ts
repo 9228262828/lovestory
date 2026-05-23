@@ -11,7 +11,7 @@ export interface SectionUpsertInput {
   content: JsonValue
 }
 
-export interface SectionUpdateInput extends Partial<SectionUpsertInput> {}
+export type SectionUpdateInput = Partial<SectionUpsertInput>
 
 export const sectionsService = {
   async getEnabledSections(): Promise<RomanticSection[]> {

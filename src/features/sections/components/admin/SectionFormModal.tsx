@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { SectionUpsertInput } from '@/services/supabase/sections.service'
 import type { JsonValue, RomanticSection } from '@/types/section'
 
@@ -20,6 +20,39 @@ const stringifyContent = (content: JsonValue): string => {
   return JSON.stringify(content, null, 2)
 }
 
+interface SectionInitialValues {
+  title: string
+  type: string
+  enabled: boolean
+  orderIndex: string
+  contentText: string
+}
+
+const buildInitialValues = (
+  mode: FormMode,
+  section: RomanticSection | null,
+  typeOptions: string[],
+  defaultOrderIndex: number,
+): SectionInitialValues => {
+  if (mode === 'edit' && section) {
+    return {
+      title: section.title,
+      type: section.type,
+      enabled: section.enabled,
+      orderIndex: section.order_index.toString(),
+      contentText: stringifyContent(section.content),
+    }
+  }
+
+  return {
+    title: '',
+    type: typeOptions[0] ?? '',
+    enabled: true,
+    orderIndex: defaultOrderIndex.toString(),
+    contentText: '{}',
+  }
+}
+
 export const SectionFormModal = ({
   isOpen,
   mode,
@@ -31,39 +64,10 @@ export const SectionFormModal = ({
   onClose,
   onSubmit,
 }: SectionFormModalProps) => {
-  const [title, setTitle] = useState('')
-  const [type, setType] = useState('')
-  const [enabled, setEnabled] = useState(true)
-  const [orderIndex, setOrderIndex] = useState('0')
-  const [contentText, setContentText] = useState('{}')
   const [validationErrorMessage, setValidationErrorMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!isOpen) {
-      return
-    }
-
-    if (mode === 'edit' && section) {
-      setTitle(section.title)
-      setType(section.type)
-      setEnabled(section.enabled)
-      setOrderIndex(section.order_index.toString())
-      setContentText(stringifyContent(section.content))
-      setValidationErrorMessage(null)
-      return
-    }
-
-    setTitle('')
-    setType(typeOptions[0] ?? '')
-    setEnabled(true)
-    setOrderIndex(defaultOrderIndex.toString())
-    setContentText('{}')
-    setValidationErrorMessage(null)
-  }, [defaultOrderIndex, isOpen, mode, section, typeOptions])
-
-  const modalTitle = useMemo(() => {
-    return mode === 'create' ? 'Create section' : 'Edit section'
-  }, [mode])
+  const modalTitle = mode === 'create' ? 'Create section' : 'Edit section'
+  const initialValues = buildInitialValues(mode, section, typeOptions, defaultOrderIndex)
+  const formInstanceKey = `${mode}-${section?.id ?? 'new'}`
 
   if (!isOpen) {
     return null
@@ -88,13 +92,15 @@ export const SectionFormModal = ({
         </div>
 
         <form
+          key={formInstanceKey}
           className="space-y-4"
           onSubmit={(event) => {
             event.preventDefault()
             setValidationErrorMessage(null)
 
-            const normalizedTitle = title.trim()
-            const normalizedType = type.trim()
+            const formData = new FormData(event.currentTarget)
+            const normalizedTitle = (formData.get('title')?.toString() ?? '').trim()
+            const normalizedType = (formData.get('type')?.toString() ?? '').trim()
 
             if (normalizedTitle.length === 0) {
               setValidationErrorMessage('Title is required.')
@@ -106,7 +112,7 @@ export const SectionFormModal = ({
               return
             }
 
-            const parsedOrderIndex = Number(orderIndex)
+            const parsedOrderIndex = Number(formData.get('order_index')?.toString() ?? '')
             if (!Number.isInteger(parsedOrderIndex)) {
               setValidationErrorMessage('Order index must be an integer number.')
               return
@@ -114,11 +120,15 @@ export const SectionFormModal = ({
 
             let parsedContent: JsonValue
             try {
+              const contentText = formData.get('content')?.toString() ?? ''
               parsedContent = JSON.parse(contentText) as JsonValue
             } catch {
               setValidationErrorMessage('Content must be valid JSON.')
               return
             }
+
+            const enabledValue = formData.get('enabled')
+            const enabled = enabledValue === 'on' || enabledValue === 'true' || enabledValue === '1'
 
             void onSubmit({
               title: normalizedTitle,
@@ -133,10 +143,8 @@ export const SectionFormModal = ({
             <label className="space-y-1.5 text-sm">
               <span className="text-zinc-300">Title</span>
               <input
-                value={title}
-                onChange={(event) => {
-                  setTitle(event.target.value)
-                }}
+                name="title"
+                defaultValue={initialValues.title}
                 className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
                 placeholder="Section title"
                 required
@@ -146,11 +154,9 @@ export const SectionFormModal = ({
             <label className="space-y-1.5 text-sm">
               <span className="text-zinc-300">Type</span>
               <input
+                name="type"
                 list="section-type-options"
-                value={type}
-                onChange={(event) => {
-                  setType(event.target.value)
-                }}
+                defaultValue={initialValues.type}
                 className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
                 placeholder="e.g. hero"
                 required
@@ -165,12 +171,10 @@ export const SectionFormModal = ({
             <label className="space-y-1.5 text-sm">
               <span className="text-zinc-300">Order index</span>
               <input
+                name="order_index"
                 type="number"
                 step={1}
-                value={orderIndex}
-                onChange={(event) => {
-                  setOrderIndex(event.target.value)
-                }}
+                defaultValue={initialValues.orderIndex}
                 className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
                 required
               />
@@ -178,11 +182,9 @@ export const SectionFormModal = ({
 
             <label className="flex items-end gap-2 pb-2 text-sm text-zinc-300">
               <input
+                name="enabled"
                 type="checkbox"
-                checked={enabled}
-                onChange={(event) => {
-                  setEnabled(event.target.checked)
-                }}
+                defaultChecked={initialValues.enabled}
                 className="h-4 w-4 rounded border-zinc-600 bg-zinc-950"
               />
               Enabled
@@ -192,10 +194,8 @@ export const SectionFormModal = ({
           <label className="block space-y-1.5 text-sm">
             <span className="text-zinc-300">Content (JSON)</span>
             <textarea
-              value={contentText}
-              onChange={(event) => {
-                setContentText(event.target.value)
-              }}
+              name="content"
+              defaultValue={initialValues.contentText}
               className="min-h-44 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
               spellCheck={false}
             />
