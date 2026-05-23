@@ -4,7 +4,23 @@ import type { RomanticSection } from '@/types/section'
 
 type SectionComponent = ComponentType<{ section: RomanticSection }>
 
-const sectionRegistry: Record<string, SectionComponent> = {
+const sectionRegistry = new Map<string, SectionComponent>([
+  ['hero', PlaceholderSection],
+  ['story', PlaceholderSection],
+  ['timeline', PlaceholderSection],
+  ['gallery', PlaceholderSection],
+  ['custom', PlaceholderSection],
+])
+
+export const registerSectionType = (type: string, component: SectionComponent) => {
+  sectionRegistry.set(type, component)
+}
+
+export const getRegisteredSectionTypes = (): string[] => {
+  return Array.from(sectionRegistry.keys())
+}
+
+const defaultRegistryFallback: Record<string, SectionComponent> = {
   hero: PlaceholderSection,
   story: PlaceholderSection,
   timeline: PlaceholderSection,
@@ -13,5 +29,5 @@ const sectionRegistry: Record<string, SectionComponent> = {
 }
 
 export const getSectionComponent = (type: string): SectionComponent => {
-  return sectionRegistry[type] ?? PlaceholderSection
+  return sectionRegistry.get(type) ?? defaultRegistryFallback[type] ?? PlaceholderSection
 }
