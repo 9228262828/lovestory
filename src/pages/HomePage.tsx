@@ -3,18 +3,21 @@ import { usePublicSections } from '@/features/sections/hooks/usePublicSections'
 
 export const HomePage = () => {
   const { sections, isLoading, errorMessage } = usePublicSections()
+  const hasCinematicIntroAsFirstSection = sections[0]?.type === 'cinematic-intro'
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Public Website</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">
-          Romantic Interactive Experience
-        </h1>
-        <p className="max-w-2xl text-sm text-zinc-600 sm:text-base">
-          This page renders only enabled sections from Supabase in dynamic order.
-        </p>
-      </header>
+    <div className={hasCinematicIntroAsFirstSection ? 'space-y-0' : 'space-y-6'}>
+      {!hasCinematicIntroAsFirstSection ? (
+        <header className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Public Website</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">
+            Romantic Interactive Experience
+          </h1>
+          <p className="max-w-2xl text-sm text-zinc-600 sm:text-base">
+            This page renders only enabled sections from Supabase in dynamic order.
+          </p>
+        </header>
+      ) : null}
 
       {isLoading ? <p className="text-sm text-zinc-600">Loading sections...</p> : null}
 

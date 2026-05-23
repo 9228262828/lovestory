@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import { CinematicIntroSection } from '@/features/sections/components/sections/CinematicIntroSection'
 import { PlaceholderSection } from '@/features/sections/components/sections/PlaceholderSection'
 import type { RomanticSection } from '@/types/section'
 
@@ -10,6 +11,7 @@ const sectionRegistry = new Map<string, SectionComponent>([
   ['timeline', PlaceholderSection],
   ['gallery', PlaceholderSection],
   ['custom', PlaceholderSection],
+  ['cinematic-intro', CinematicIntroSection],
 ])
 
 export const registerSectionType = (type: string, component: SectionComponent) => {
@@ -26,6 +28,7 @@ const defaultRegistryFallback: Record<string, SectionComponent> = {
   timeline: PlaceholderSection,
   gallery: PlaceholderSection,
   custom: PlaceholderSection,
+  'cinematic-intro': CinematicIntroSection,
 }
 
 export const getSectionComponent = (type: string): SectionComponent => {
