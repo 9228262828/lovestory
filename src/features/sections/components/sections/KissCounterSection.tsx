@@ -1,5 +1,7 @@
-import { useCallback, useMemo, useRef, useState, type MouseEvent } from 'react'
-import { AnimatePresence, motion, useAnimationControls, useReducedMotion } from 'framer-motion'
+import { useCallback, useMemo } from 'react'
+import { motion, useAnimationControls, useReducedMotion } from 'framer-motion'
+import { useDailyKissCount } from '@/hooks/useDailyKissCount'
+import { useKissStream } from '@/hooks/useKissStream'
 import type { JsonValue, RomanticSection } from '@/types/section'
 
 interface KissCounterSectionProps {
@@ -11,22 +13,8 @@ interface KissCounterContent {
   subtitle: string
   buttonLabel: string
   counterLabel: string
-  initialCount: number
 }
 
-interface FloatingHeart {
-  id: number
-  originX: number
-  originY: number
-  driftX: number
-  riseY: number
-  duration: number
-  size: number
-  rotate: number
-}
-
-const MAX_ACTIVE_HEARTS = 24
-const HEARTS_PER_CLICK = 3
 const sectionEase: [number, number, number, number] = [0.22, 1, 0.36, 1]
 
 const isRecord = (value: JsonValue): value is Record<string, JsonValue> => {
@@ -37,81 +25,33 @@ const getString = (value: JsonValue | undefined, fallback: string): string => {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback
 }
 
-const getNumber = (value: JsonValue | undefined, fallback: number, minimum: number, maximum: number): number => {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return fallback
-  }
-
-  return Math.max(minimum, Math.min(maximum, value))
-}
-
 const resolveKissCounterContent = (section: RomanticSection): KissCounterContent => {
   if (!isRecord(section.content)) {
     return {
       title: section.title || 'Kiss Counter',
-      subtitle: 'Count every sweet little kiss and watch the love float up.',
+      subtitle: 'Every kiss is saved globally and counted live for today.',
       buttonLabel: 'Send a Kiss',
-      counterLabel: 'Kisses shared',
-      initialCount: 0,
+      counterLabel: 'Kisses shared today',
     }
   }
 
   return {
     title: getString(section.content.title, section.title || 'Kiss Counter'),
-    subtitle: getString(section.content.subtitle, 'Count every sweet little kiss and watch the love float up.'),
+    subtitle: getString(section.content.subtitle, 'Every kiss is saved globally and counted live for today.'),
     buttonLabel: getString(section.content.buttonLabel, 'Send a Kiss'),
-    counterLabel: getString(section.content.counterLabel, 'Kisses shared'),
-    initialCount: getNumber(section.content.initialCount, 0, 0, 1_000_000),
+    counterLabel: getString(section.content.counterLabel, 'Kisses shared today'),
   }
-}
-
-const randomBetween = (minimum: number, maximum: number): number => {
-  return minimum + Math.random() * (maximum - minimum)
-}
-
-const buildHearts = (originX: number, originY: number, total: number, idStart: number): FloatingHeart[] => {
-  return Array.from({ length: total }, (_, index) => ({
-    id: idStart + index,
-    originX,
-    originY,
-    driftX: randomBetween(-95, 95),
-    riseY: randomBetween(120, 220),
-    duration: randomBetween(0.95, 1.7),
-    size: randomBetween(18, 34),
-    rotate: randomBetween(-20, 20),
-  }))
 }
 
 export const KissCounterSection = ({ section }: KissCounterSectionProps) => {
   const reduceMotion = useReducedMotion()
   const pulseControls = useAnimationControls()
-  const rootRef = useRef<HTMLElement | null>(null)
-  const nextHeartIdRef = useRef(1)
   const content = useMemo(() => resolveKissCounterContent(section), [section])
-  const [kissCount, setKissCount] = useState(content.initialCount)
-  const [hearts, setHearts] = useState<FloatingHeart[]>([])
-
-  const removeHeart = useCallback((heartId: number) => {
-    setHearts((existingHearts) => existingHearts.filter((heart) => heart.id !== heartId))
-  }, [])
+  const { todayKisses, yesterdayKisses, isLoading } = useDailyKissCount()
+  const { sendKiss, sendErrorMessage } = useKissStream()
 
   const handleKissClick = useCallback(
-    (event: MouseEvent<HTMLButtonElement>) => {
-      const sectionRect = rootRef.current?.getBoundingClientRect()
-      if (!sectionRect) {
-        return
-      }
-
-      setKissCount((previousCount) => previousCount + 1)
-
-      const originX = event.clientX - sectionRect.left
-      const originY = event.clientY - sectionRect.top
-      const heartsPerClick = reduceMotion ? 1 : HEARTS_PER_CLICK + Math.round(Math.random())
-      const heartBatch = buildHearts(originX, originY, heartsPerClick, nextHeartIdRef.current)
-      nextHeartIdRef.current += heartBatch.length
-
-      setHearts((existingHearts) => [...existingHearts, ...heartBatch].slice(-MAX_ACTIVE_HEARTS))
-
+    () => {
       void pulseControls.start(
         reduceMotion
           ? {
@@ -124,13 +64,17 @@ export const KissCounterSection = ({ section }: KissCounterSectionProps) => {
               transition: { duration: 0.24, ease: 'easeOut' },
             },
       )
+
+      void sendKiss({
+        source: 'kiss-counter-section',
+        section_id: section.id,
+      })
     },
-    [pulseControls, reduceMotion],
+    [pulseControls, reduceMotion, section.id, sendKiss],
   )
 
   return (
     <motion.section
-      ref={rootRef}
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: reduceMotion ? 0.2 : 0.55, ease: sectionEase }}
@@ -139,38 +83,6 @@ export const KissCounterSection = ({ section }: KissCounterSectionProps) => {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(251,113,133,0.22),transparent_44%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_82%_82%,rgba(244,114,182,0.2),transparent_36%)]" />
 
-      <AnimatePresence>
-        {hearts.map((heart) => (
-          <motion.span
-            key={heart.id}
-            aria-hidden
-            className="pointer-events-none absolute left-0 top-0 select-none"
-            style={{ fontSize: `${heart.size}px`, lineHeight: 1 }}
-            initial={{
-              x: heart.originX - heart.size / 2,
-              y: heart.originY - heart.size / 2,
-              opacity: 0,
-              scale: 0.55,
-              rotate: heart.rotate - 4,
-            }}
-            animate={{
-              x: heart.originX + heart.driftX,
-              y: heart.originY - heart.riseY,
-              opacity: [0, 0.95, 0],
-              scale: [0.55, 1.07, 0.82],
-              rotate: heart.rotate,
-            }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: heart.duration, ease: sectionEase }}
-            onAnimationComplete={() => {
-              removeHeart(heart.id)
-            }}
-          >
-            ❤️
-          </motion.span>
-        ))}
-      </AnimatePresence>
-
       <motion.div animate={pulseControls} className="relative z-10 mx-auto max-w-2xl text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-600/80">Kiss Counter</p>
         <h2 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">{content.title}</h2>
@@ -178,7 +90,10 @@ export const KissCounterSection = ({ section }: KissCounterSectionProps) => {
 
         <div className="mx-auto mt-7 w-full max-w-sm rounded-3xl border border-rose-100/70 bg-white/70 p-5 shadow-inner shadow-rose-200/40 sm:p-6">
           <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-rose-600/85">{content.counterLabel}</p>
-          <p className="mt-3 text-4xl font-semibold leading-none text-zinc-900 sm:text-5xl">{kissCount}</p>
+          <p className="mt-3 text-4xl font-semibold leading-none text-zinc-900 sm:text-5xl">
+            {isLoading ? '...' : todayKisses}
+          </p>
+          <p className="mt-2 text-xs text-zinc-600">Yesterday: {yesterdayKisses}</p>
           <motion.button
             type="button"
             onClick={handleKissClick}
@@ -187,6 +102,7 @@ export const KissCounterSection = ({ section }: KissCounterSectionProps) => {
           >
             {content.buttonLabel}
           </motion.button>
+          {sendErrorMessage ? <p className="mt-3 text-xs text-rose-600">{sendErrorMessage}</p> : null}
         </div>
       </motion.div>
     </motion.section>

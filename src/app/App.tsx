@@ -2,6 +2,7 @@ import { RouterProvider } from 'react-router-dom'
 import { AppProviders } from '@/app/providers/AppProviders'
 import { router } from '@/app/router'
 import { supabaseConfig } from '@/config/env'
+import { GlobalKissOverlay } from '@/features/kiss/components/GlobalKissOverlay'
 
 const MissingSupabaseEnvScreen = () => {
   return (
@@ -31,6 +32,7 @@ export const App = () => {
   return (
     <AppProviders>
       <RouterProvider router={router} />
+      <GlobalKissOverlay />
     </AppProviders>
   )
 }
