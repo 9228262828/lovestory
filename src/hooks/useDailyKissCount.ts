@@ -65,6 +65,12 @@ const applyIncomingEvent = (previous: DailyKissState, event: KissEvent): DailyKi
   return normalizedState
 }
 
+const applyIncomingEvents = (previous: DailyKissState, events: KissEvent[]): DailyKissState => {
+  return events.reduce((currentState, event) => {
+    return applyIncomingEvent(currentState, event)
+  }, previous)
+}
+
 export const useDailyKissCount = (): UseDailyKissCountResult => {
   const [state, setState] = useState<DailyKissState>(() => getDefaultState())
 
@@ -107,15 +113,28 @@ export const useDailyKissCount = (): UseDailyKissCountResult => {
     }
   }, [state.dayKey, refreshCounts])
 
-  const handleRealtimeInsert = useCallback((event: KissEvent) => {
-    setState((previousState) => ({
-      ...applyIncomingEvent(previousState, event),
-      isLoading: false,
-      errorMessage: null,
-    }))
+  const handleRealtimeInsertBatch = useCallback((events: KissEvent[]) => {
+    if (events.length === 0) {
+      return
+    }
+
+    setState((previousState) => {
+      const nextState = applyIncomingEvents(previousState, events)
+      const shouldResetUiState = nextState.isLoading || nextState.errorMessage !== null
+
+      if (!shouldResetUiState) {
+        return nextState
+      }
+
+      return {
+        ...nextState,
+        isLoading: false,
+        errorMessage: null,
+      }
+    })
   }, [])
 
-  useKissStream({ onKissEvent: handleRealtimeInsert })
+  useKissStream({ onKissEvents: handleRealtimeInsertBatch })
 
   return {
     todayKisses: state.todayKisses,

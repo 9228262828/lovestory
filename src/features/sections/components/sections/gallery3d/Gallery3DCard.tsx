@@ -171,10 +171,9 @@ const Gallery3DCardBase = ({
         whileHover={isReducedMotion ? undefined : { scale: Math.min(sizeScale + 0.03, 1.04), rotateZ: layout.rotateZ + 2 }}
         whileDrag={{ scale: Math.min(sizeScale + 0.05, 1.08), rotateZ: 0 }}
         transition={{
-          type: 'spring',
-          stiffness: isReducedMotion ? 240 : 165,
-          damping: isReducedMotion ? 30 : 17,
-          mass: 0.75,
+          type: 'tween',
+          duration: isReducedMotion ? 0.16 : 0.34,
+          ease: easing,
         }}
       >
         <div

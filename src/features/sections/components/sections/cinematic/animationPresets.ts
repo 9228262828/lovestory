@@ -15,11 +15,11 @@ export const cinematicContainerVariants: Variants = {
 }
 
 export const cinematicFadeUpVariants: Variants = {
-  hidden: { opacity: 0, y: 18, filter: 'blur(10px)' },
+  hidden: { opacity: 0, y: 18, scale: 0.985 },
   visible: {
     opacity: 1,
     y: 0,
-    filter: 'blur(0px)',
+    scale: 1,
     transition: { duration: 1.1, ease: cinematicEase },
   },
 }

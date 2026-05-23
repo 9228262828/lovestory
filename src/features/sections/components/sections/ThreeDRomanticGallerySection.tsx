@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { memo, useMemo, useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Gallery3DCard } from '@/features/sections/components/sections/gallery3d/Gallery3DCard'
 import { resolveThreeDGalleryContent } from '@/features/sections/components/sections/gallery3d/content'
@@ -18,6 +18,11 @@ interface ParticleState {
   delay: number
   scale: number
   opacity: number
+}
+
+interface GalleryParticleLayerProps {
+  particles: ParticleState[]
+  reduceMotion: boolean | null
 }
 
 const buildParticles = (count: number): ParticleState[] => {
@@ -64,6 +69,47 @@ const getCardScaleFactor = (cardCount: number): number => {
   return clamp(1 - density * 0.14 - extraCards * 0.01, 0.78, 1)
 }
 
+const GalleryParticleLayer = memo(({ particles, reduceMotion }: GalleryParticleLayerProps) => {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0">
+      {particles.map((particle) => (
+        <motion.span
+          key={particle.id}
+          className="absolute h-2 w-2 rounded-full bg-rose-50/80 will-change-transform"
+          style={{
+            left: particle.left,
+            top: particle.top,
+            opacity: particle.opacity,
+            filter: 'blur(0.4px)',
+          }}
+          animate={
+            reduceMotion
+              ? undefined
+              : {
+                  y: [-8, 10, -8],
+                  x: [-2, 3, -2],
+                  scale: [particle.scale, particle.scale + 0.25, particle.scale],
+                }
+          }
+          transition={
+            reduceMotion
+              ? undefined
+              : {
+                  duration: particle.duration,
+                  delay: particle.delay,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                  type: 'tween',
+                }
+          }
+        />
+      ))}
+    </div>
+  )
+})
+
+GalleryParticleLayer.displayName = 'GalleryParticleLayer'
+
 export const ThreeDRomanticGallerySection = ({ section }: ThreeDRomanticGallerySectionProps) => {
   const reduceMotion = useReducedMotion()
   const isCompactViewport = useIsCompactViewport()
@@ -95,41 +141,7 @@ export const ThreeDRomanticGallerySection = ({ section }: ThreeDRomanticGalleryS
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_82%,rgba(244,114,182,0.2),transparent_36%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,0.4),rgba(255,255,255,0.06)_45%,rgba(255,255,255,0.2))]" />
 
-      {content.enableParticles ? (
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          {particles.map((particle) => (
-            <motion.span
-              key={particle.id}
-              className="absolute h-2 w-2 rounded-full bg-rose-50/80"
-              style={{
-                left: particle.left,
-                top: particle.top,
-                opacity: particle.opacity,
-                filter: 'blur(0.4px)',
-              }}
-              animate={
-                reduceMotion
-                  ? undefined
-                  : {
-                      y: [-8, 10, -8],
-                      x: [-2, 3, -2],
-                      scale: [particle.scale, particle.scale + 0.25, particle.scale],
-                    }
-              }
-              transition={
-                reduceMotion
-                  ? undefined
-                  : {
-                      duration: particle.duration,
-                      delay: particle.delay,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: 'easeInOut',
-                    }
-              }
-            />
-          ))}
-        </div>
-      ) : null}
+      {content.enableParticles ? <GalleryParticleLayer particles={particles} reduceMotion={reduceMotion} /> : null}
 
       <div className="relative z-10">
         <div className="mx-auto max-w-3xl text-center">

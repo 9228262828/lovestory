@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import type { RomanticSection } from '@/types/section'
 import {
@@ -25,6 +25,11 @@ interface ParticleState {
 
 const PARTICLE_COUNT = 14
 
+interface CinematicParticleLayerProps {
+  particles: ParticleState[]
+  reduceMotion: boolean | null
+}
+
 const buildParticles = (): ParticleState[] => {
   return Array.from({ length: PARTICLE_COUNT }, (_, index) => ({
     id: index,
@@ -35,6 +40,34 @@ const buildParticles = (): ParticleState[] => {
     blur: 1 + Math.random() * 3,
   }))
 }
+
+const CinematicParticleLayer = memo(({ particles, reduceMotion }: CinematicParticleLayerProps) => {
+  return (
+    <div aria-hidden className="absolute inset-0">
+      {particles.map((particle) => (
+        <motion.span
+          key={particle.id}
+          className="absolute h-1.5 w-1.5 rounded-full bg-rose-100/70 will-change-transform"
+          style={{ left: particle.left, top: particle.top, filter: `blur(${particle.blur}px)` }}
+          animate={reduceMotion ? undefined : { y: [-6, 6, -6], opacity: [0.2, 0.55, 0.2], scale: [1, 1.3, 1] }}
+          transition={
+            reduceMotion
+              ? undefined
+              : {
+                  duration: particle.duration,
+                  delay: particle.delay,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'linear',
+                  type: 'tween',
+                }
+          }
+        />
+      ))}
+    </div>
+  )
+})
+
+CinematicParticleLayer.displayName = 'CinematicParticleLayer'
 
 export const CinematicIntroSection = ({ section }: CinematicIntroSectionProps) => {
   const rootRef = useRef<HTMLElement | null>(null)
@@ -172,8 +205,8 @@ export const CinematicIntroSection = ({ section }: CinematicIntroSectionProps) =
       className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] flex min-h-[100svh] w-screen items-center justify-center overflow-hidden"
       animate={
         isTransitioning
-          ? { opacity: 0, scale: 1.03, filter: 'blur(10px)' }
-          : { opacity: 1, scale: 1, filter: 'blur(0px)' }
+          ? { opacity: 0, scale: 1.03 }
+          : { opacity: 1, scale: 1 }
       }
       transition={{ duration: reduceMotion ? 0.15 : 0.9, ease: cinematicEasing }}
     >
@@ -199,28 +232,7 @@ export const CinematicIntroSection = ({ section }: CinematicIntroSectionProps) =
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,113,133,0.22),transparent_50%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_80%,rgba(244,114,182,0.16),transparent_45%)]" />
 
-      {content.showParticles ? (
-        <div aria-hidden className="absolute inset-0">
-          {particles.map((particle) => (
-            <motion.span
-              key={particle.id}
-              className="absolute h-1.5 w-1.5 rounded-full bg-rose-100/70"
-              style={{ left: particle.left, top: particle.top, filter: `blur(${particle.blur}px)` }}
-              animate={reduceMotion ? undefined : { y: [-6, 6, -6], opacity: [0.2, 0.55, 0.2], scale: [1, 1.3, 1] }}
-              transition={
-                reduceMotion
-                  ? undefined
-                  : {
-                      duration: particle.duration,
-                      delay: particle.delay,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: 'easeInOut',
-                    }
-              }
-            />
-          ))}
-        </div>
-      ) : null}
+      {content.showParticles ? <CinematicParticleLayer particles={particles} reduceMotion={reduceMotion} /> : null}
 
       <motion.div
         className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-6 text-center sm:px-10"
