@@ -9,6 +9,9 @@ export interface SectionUpsertInput {
   enabled: boolean
   order_index: number
   content: JsonValue
+  image_url: string | null
+  music_url: string | null
+  voice_note_url: string | null
 }
 
 export type SectionUpdateInput = Partial<SectionUpsertInput>

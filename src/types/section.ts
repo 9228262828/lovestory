@@ -17,5 +17,8 @@ export interface RomanticSection {
   enabled: boolean
   order_index: number
   content: JsonValue
+  image_url: string | null
+  music_url: string | null
+  voice_note_url: string | null
   created_at: string
 }

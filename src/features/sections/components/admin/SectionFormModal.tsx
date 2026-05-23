@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { UploadField } from '@/features/uploads/components/UploadField'
 import type { SectionUpsertInput } from '@/services/supabase/sections.service'
 import type { JsonValue, RomanticSection } from '@/types/section'
 
@@ -26,6 +27,9 @@ interface SectionInitialValues {
   enabled: boolean
   orderIndex: string
   contentText: string
+  imageUrl: string | null
+  musicUrl: string | null
+  voiceNoteUrl: string | null
 }
 
 const buildInitialValues = (
@@ -41,6 +45,9 @@ const buildInitialValues = (
       enabled: section.enabled,
       orderIndex: section.order_index.toString(),
       contentText: stringifyContent(section.content),
+      imageUrl: section.image_url ?? null,
+      musicUrl: section.music_url ?? null,
+      voiceNoteUrl: section.voice_note_url ?? null,
     }
   }
 
@@ -50,6 +57,9 @@ const buildInitialValues = (
     enabled: true,
     orderIndex: defaultOrderIndex.toString(),
     contentText: '{}',
+    imageUrl: null,
+    musicUrl: null,
+    voiceNoteUrl: null,
   }
 }
 
@@ -68,6 +78,20 @@ export const SectionFormModal = ({
   const modalTitle = mode === 'create' ? 'Create section' : 'Edit section'
   const initialValues = buildInitialValues(mode, section, typeOptions, defaultOrderIndex)
   const formInstanceKey = `${mode}-${section?.id ?? 'new'}`
+  const [imageUrl, setImageUrl] = useState<string | null>(initialValues.imageUrl)
+  const [musicUrl, setMusicUrl] = useState<string | null>(initialValues.musicUrl)
+  const [voiceNoteUrl, setVoiceNoteUrl] = useState<string | null>(initialValues.voiceNoteUrl)
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    setValidationErrorMessage(null)
+    setImageUrl(initialValues.imageUrl)
+    setMusicUrl(initialValues.musicUrl)
+    setVoiceNoteUrl(initialValues.voiceNoteUrl)
+  }, [formInstanceKey, initialValues.imageUrl, initialValues.musicUrl, initialValues.voiceNoteUrl, isOpen])
 
   if (!isOpen) {
     return null
@@ -136,6 +160,9 @@ export const SectionFormModal = ({
               enabled,
               order_index: parsedOrderIndex,
               content: parsedContent,
+              image_url: imageUrl,
+              music_url: musicUrl,
+              voice_note_url: voiceNoteUrl,
             })
           }}
         >
@@ -190,6 +217,34 @@ export const SectionFormModal = ({
               Enabled
             </label>
           </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <UploadField
+              label="Image"
+              target="image"
+              value={imageUrl}
+              onChange={setImageUrl}
+              disabled={isSubmitting}
+              helperText="Image upload (optional)"
+            />
+            <UploadField
+              label="Music"
+              target="music"
+              value={musicUrl}
+              onChange={setMusicUrl}
+              disabled={isSubmitting}
+              helperText="Music upload (optional)"
+            />
+          </div>
+
+          <UploadField
+            label="Voice note"
+            target="voice-note"
+            value={voiceNoteUrl}
+            onChange={setVoiceNoteUrl}
+            disabled={isSubmitting}
+            helperText="Voice-note upload (optional)"
+          />
 
           <label className="block space-y-1.5 text-sm">
             <span className="text-zinc-300">Content (JSON)</span>
