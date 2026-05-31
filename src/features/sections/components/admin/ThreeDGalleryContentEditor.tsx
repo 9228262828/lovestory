@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { UploadField } from '@/features/uploads/components/UploadField'
 import type { JsonValue } from '@/types/section'
 
 interface ThreeDGalleryContentEditorProps {
   initialContent: JsonValue
   fallbackImageUrl: string | null
-  resetKey: string
   disabled?: boolean
   onContentChange: (content: JsonValue) => void
 }
@@ -14,6 +13,12 @@ interface GalleryImageItem {
   id: string
   imageUrl: string
   caption: string
+}
+
+interface InitialEditorState {
+  contentWithoutCards: Record<string, JsonValue>
+  nonImageCards: JsonValue[]
+  imageItems: GalleryImageItem[]
 }
 
 const buildLocalId = (): string => {
@@ -103,38 +108,33 @@ const moveItem = (items: GalleryImageItem[], index: number, direction: 'up' | 'd
   return nextItems
 }
 
+const buildInitialEditorState = (initialContent: JsonValue, fallbackImageUrl: string | null): InitialEditorState => {
+  const baseContent = isRecord(initialContent) ? initialContent : {}
+  const cards = Array.isArray(baseContent.cards) ? baseContent.cards : []
+  const contentWithoutCards: Record<string, JsonValue> = { ...baseContent }
+  delete contentWithoutCards.cards
+
+  return {
+    contentWithoutCards,
+    nonImageCards: getNonImageCards(cards),
+    imageItems: getImageItemsFromCards(cards, fallbackImageUrl),
+  }
+}
+
 export const ThreeDGalleryContentEditor = ({
   initialContent,
   fallbackImageUrl,
-  resetKey,
   disabled = false,
   onContentChange,
 }: ThreeDGalleryContentEditorProps) => {
-  const parsedInitial = useMemo(() => {
-    const baseContent = isRecord(initialContent) ? initialContent : {}
-    const cards = Array.isArray(baseContent.cards) ? baseContent.cards : []
-    const { cards: _ignoredCards, ...contentWithoutCards } = baseContent
-
-    return {
-      contentWithoutCards,
-      nonImageCards: getNonImageCards(cards),
-      imageItems: getImageItemsFromCards(cards, fallbackImageUrl),
-    }
-  }, [fallbackImageUrl, initialContent, resetKey])
-
-  const [contentWithoutCards, setContentWithoutCards] = useState<Record<string, JsonValue>>(parsedInitial.contentWithoutCards)
-  const [nonImageCards, setNonImageCards] = useState<JsonValue[]>(parsedInitial.nonImageCards)
-  const [imageItems, setImageItems] = useState<GalleryImageItem[]>(parsedInitial.imageItems)
+  const [initialEditorState] = useState<InitialEditorState>(() => {
+    return buildInitialEditorState(initialContent, fallbackImageUrl)
+  })
+  const [imageItems, setImageItems] = useState<GalleryImageItem[]>(initialEditorState.imageItems)
 
   useEffect(() => {
-    setContentWithoutCards(parsedInitial.contentWithoutCards)
-    setNonImageCards(parsedInitial.nonImageCards)
-    setImageItems(parsedInitial.imageItems)
-  }, [parsedInitial])
-
-  useEffect(() => {
-    onContentChange(toGalleryContent(contentWithoutCards, nonImageCards, imageItems))
-  }, [contentWithoutCards, imageItems, nonImageCards, onContentChange])
+    onContentChange(toGalleryContent(initialEditorState.contentWithoutCards, initialEditorState.nonImageCards, imageItems))
+  }, [imageItems, initialEditorState, onContentChange])
 
   return (
     <div className="space-y-3 rounded-lg border border-zinc-700/80 bg-zinc-950/60 p-3">
@@ -252,7 +252,7 @@ export const ThreeDGalleryContentEditor = ({
         })}
       </div>
 
-      {nonImageCards.length > 0 ? (
+      {initialEditorState.nonImageCards.length > 0 ? (
         <p className="rounded-md border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-[11px] text-zinc-400">
           Existing non-image cards are kept in the content JSON and will render after these images.
         </p>
