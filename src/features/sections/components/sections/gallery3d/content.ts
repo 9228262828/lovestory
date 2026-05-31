@@ -10,7 +10,7 @@ interface GalleryCardBase {
 export interface GalleryImageCard extends GalleryCardBase {
   type: 'image'
   imageUrl: string
-  caption: string
+  caption?: string
 }
 
 export interface GalleryMessageCard extends GalleryCardBase {
@@ -70,6 +70,15 @@ const getString = (value: JsonValue | undefined, fallback: string): string => {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback
 }
 
+const getOptionalString = (value: JsonValue | undefined): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const normalized = value.trim()
+  return normalized.length > 0 ? normalized : undefined
+}
+
 const getBoolean = (value: JsonValue | undefined, fallback: boolean): boolean => {
   return typeof value === 'boolean' ? value : fallback
 }
@@ -127,7 +136,7 @@ const normalizeCards = (rawCards: JsonValue | undefined, sectionImageUrl: string
           id,
           type: 'image',
           imageUrl,
-          caption: getString(rawCard.caption, 'A moment to hold close forever.'),
+          caption: getOptionalString(rawCard.caption),
         }
       }
 
@@ -150,9 +159,10 @@ const normalizeCards = (rawCards: JsonValue | undefined, sectionImageUrl: string
   return normalized.length > 0 ? normalized : defaultCards
 }
 
-export const resolveThreeDGalleryContent = (section: RomanticSection): ThreeDGalleryContent => {
-  const rawContent = section.content
-
+export const resolveThreeDGalleryContentFromRawContent = (
+  rawContent: JsonValue,
+  sectionImageUrl: string | null,
+): ThreeDGalleryContent => {
   if (!isRecord(rawContent)) {
     return defaultContent
   }
@@ -162,6 +172,10 @@ export const resolveThreeDGalleryContent = (section: RomanticSection): ThreeDGal
     subtitle: getString(rawContent.subtitle, defaultContent.subtitle),
     enableParticles: getBoolean(rawContent.enableParticles, defaultContent.enableParticles),
     particleCount: getNumber(rawContent.particleCount, defaultContent.particleCount, 6, 20),
-    cards: normalizeCards(rawContent.cards, section.image_url),
+    cards: normalizeCards(rawContent.cards, sectionImageUrl),
   }
+}
+
+export const resolveThreeDGalleryContent = (section: RomanticSection): ThreeDGalleryContent => {
+  return resolveThreeDGalleryContentFromRawContent(section.content, section.image_url)
 }

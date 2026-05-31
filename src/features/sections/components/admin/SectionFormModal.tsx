@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ThreeDGalleryContentEditor } from '@/features/sections/components/admin/ThreeDGalleryContentEditor'
 import { UploadField } from '@/features/uploads/components/UploadField'
 import type { SectionUpsertInput } from '@/services/supabase/sections.service'
 import type { JsonValue, RomanticSection } from '@/types/section'
@@ -19,6 +20,14 @@ interface SectionFormModalProps {
 
 const stringifyContent = (content: JsonValue): string => {
   return JSON.stringify(content, null, 2)
+}
+
+const parseContent = (value: string): JsonValue => {
+  try {
+    return JSON.parse(value) as JsonValue
+  } catch {
+    return {}
+  }
 }
 
 interface SectionInitialValues {
@@ -78,6 +87,36 @@ export const SectionFormModal = ({
   const modalTitle = mode === 'create' ? 'Create section' : 'Edit section'
   const initialValues = buildInitialValues(mode, section, typeOptions, defaultOrderIndex)
   const formInstanceKey = `${mode}-${section?.id ?? 'new'}`
+  const initialParsedContent = useMemo(() => parseContent(initialValues.contentText), [initialValues.contentText])
+  const [selectedType, setSelectedType] = useState(initialValues.type)
+  const [contentText, setContentText] = useState(initialValues.contentText)
+  const [galleryContent, setGalleryContent] = useState<JsonValue>(initialParsedContent)
+  const galleryContentText = useMemo(() => stringifyContent(galleryContent), [galleryContent])
+  const isThreeDGalleryType = selectedType.trim() === '3d-gallery'
+
+  useEffect(() => {
+    setValidationErrorMessage(null)
+    setSelectedType(initialValues.type)
+    setContentText(initialValues.contentText)
+    setGalleryContent(initialParsedContent)
+  }, [formInstanceKey, initialParsedContent, initialValues.contentText, initialValues.type])
+
+  const handleTypeChange = useCallback(
+    (nextType: string) => {
+      const normalizedType = nextType.trim()
+
+      if (normalizedType === '3d-gallery' && selectedType.trim() !== '3d-gallery') {
+        setGalleryContent(parseContent(contentText))
+      }
+
+      if (normalizedType !== '3d-gallery' && selectedType.trim() === '3d-gallery') {
+        setContentText(galleryContentText)
+      }
+
+      setSelectedType(nextType)
+    },
+    [contentText, galleryContentText, selectedType],
+  )
 
   if (!isOpen) {
     return null
@@ -172,7 +211,10 @@ export const SectionFormModal = ({
               <input
                 name="type"
                 list="section-type-options"
-                defaultValue={initialValues.type}
+                value={selectedType}
+                onChange={(event) => {
+                  handleTypeChange(event.currentTarget.value)
+                }}
                 className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
                 placeholder="e.g. hero"
                 required
@@ -235,15 +277,31 @@ export const SectionFormModal = ({
             helperText="Voice-note upload (optional)"
           />
 
-          <label className="block space-y-1.5 text-sm">
-            <span className="text-zinc-300">Content (JSON)</span>
-            <textarea
-              name="content"
-              defaultValue={initialValues.contentText}
-              className="min-h-44 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
-              spellCheck={false}
-            />
-          </label>
+          {isThreeDGalleryType ? (
+            <>
+              <ThreeDGalleryContentEditor
+                initialContent={initialParsedContent}
+                fallbackImageUrl={initialValues.imageUrl}
+                resetKey={formInstanceKey}
+                disabled={isSubmitting}
+                onContentChange={setGalleryContent}
+              />
+              <input type="hidden" name="content" value={galleryContentText} />
+            </>
+          ) : (
+            <label className="block space-y-1.5 text-sm">
+              <span className="text-zinc-300">Content (JSON)</span>
+              <textarea
+                name="content"
+                value={contentText}
+                onChange={(event) => {
+                  setContentText(event.currentTarget.value)
+                }}
+                className="min-h-44 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
+                spellCheck={false}
+              />
+            </label>
+          )}
 
           {validationErrorMessage ? (
             <p className="rounded-md border border-amber-800 bg-amber-900/30 px-3 py-2 text-sm text-amber-300">

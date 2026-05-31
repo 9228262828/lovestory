@@ -1,6 +1,7 @@
 import { memo, useMemo, useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Gallery3DCard } from '@/features/sections/components/sections/gallery3d/Gallery3DCard'
+import { GalleryMobileCoverFlow } from '@/features/sections/components/sections/gallery3d/GalleryMobileCoverFlow'
 import { resolveThreeDGalleryContent } from '@/features/sections/components/sections/gallery3d/content'
 import { useGalleryDeck } from '@/features/sections/components/sections/gallery3d/useGalleryDeck'
 import { useIsCompactViewport } from '@/features/sections/components/sections/gallery3d/useIsCompactViewport'
@@ -149,41 +150,47 @@ export const ThreeDRomanticGallerySection = ({ section }: ThreeDRomanticGalleryS
           <h2 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">{content.title}</h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-zinc-700 sm:text-base">{content.subtitle}</p>
           <p className="mt-4 text-[11px] font-medium uppercase tracking-[0.24em] text-rose-700/75 sm:text-xs">
-            Tap or click cards to flip • Drag to explore
+            {isCompactViewport ? 'Swipe left or right to explore' : 'Tap or click cards to flip • Drag to explore'}
           </p>
         </div>
 
-        <motion.div
-          ref={dragBoundsRef}
-          className="relative mt-8 w-full overflow-hidden rounded-[1.65rem] border border-white/40 bg-white/22 p-4 shadow-inner shadow-rose-200/35 backdrop-blur-[1.5px] [perspective:1400px] sm:mt-10 sm:p-6"
-          initial={false}
-          animate={{ minHeight: containerMinHeightPx }}
-          style={{ minHeight: containerMinHeightPx }}
-          transition={{ duration: reduceMotion ? 0.16 : 0.45, ease: sectionEase }}
-        >
-          {content.cards.map((card, index) => {
-            const layout = cardLayouts[index]
+        {isCompactViewport ? (
+          <div className="relative mt-8 w-full sm:mt-10">
+            <GalleryMobileCoverFlow cards={content.cards} reduceMotion={reduceMotion} />
+          </div>
+        ) : (
+          <motion.div
+            ref={dragBoundsRef}
+            className="relative mt-8 w-full overflow-hidden rounded-[1.65rem] border border-white/40 bg-white/22 p-4 shadow-inner shadow-rose-200/35 backdrop-blur-[1.5px] [perspective:1400px] sm:mt-10 sm:p-6"
+            initial={false}
+            animate={{ minHeight: containerMinHeightPx }}
+            style={{ minHeight: containerMinHeightPx }}
+            transition={{ duration: reduceMotion ? 0.16 : 0.45, ease: sectionEase }}
+          >
+            {content.cards.map((card, index) => {
+              const layout = cardLayouts[index]
 
-            if (!layout) {
-              return null
-            }
+              if (!layout) {
+                return null
+              }
 
-            return (
-              <Gallery3DCard
-                key={card.id}
-                card={card}
-                layout={layout}
-                index={index}
-                isFlipped={isCardFlipped(card.id)}
-                reduceMotion={reduceMotion}
-                isCompactViewport={isCompactViewport}
-                dragConstraints={dragBoundsRef}
-                sizeScale={cardScaleFactor}
-                onToggleFlip={toggleCardFlip}
-              />
-            )
-          })}
-        </motion.div>
+              return (
+                <Gallery3DCard
+                  key={card.id}
+                  card={card}
+                  layout={layout}
+                  index={index}
+                  isFlipped={isCardFlipped(card.id)}
+                  reduceMotion={reduceMotion}
+                  isCompactViewport={isCompactViewport}
+                  dragConstraints={dragBoundsRef}
+                  sizeScale={cardScaleFactor}
+                  onToggleFlip={toggleCardFlip}
+                />
+              )
+            })}
+          </motion.div>
+        )}
       </div>
     </motion.section>
   )
