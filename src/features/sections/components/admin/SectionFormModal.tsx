@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { ScrollableAdminModal } from '@/components/ui/ScrollableAdminModal'
 import { ThreeDGalleryContentEditor } from '@/features/sections/components/admin/ThreeDGalleryContentEditor'
 import { UploadField } from '@/features/uploads/components/UploadField'
 import type { SectionUpsertInput } from '@/services/supabase/sections.service'
@@ -117,7 +118,7 @@ const SectionFormFields = ({
 
   return (
     <form
-      className="space-y-4"
+      className="flex min-h-0 flex-1 flex-col"
       onSubmit={(event) => {
         event.preventDefault()
         setValidationErrorMessage(null)
@@ -169,125 +170,130 @@ const SectionFormFields = ({
         })
       }}
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="space-y-1.5 text-sm">
-          <span className="text-zinc-300">Title</span>
-          <input
-            name="title"
-            defaultValue={initialValues.title}
-            className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
-            placeholder="Section title"
-            required
-          />
-        </label>
+      <div
+        className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 touch-pan-y focus:outline-none focus-visible:ring-1 focus-visible:ring-zinc-600 sm:px-6 sm:py-5"
+        tabIndex={0}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="space-y-1.5 text-sm">
+            <span className="text-zinc-300">Title</span>
+            <input
+              name="title"
+              defaultValue={initialValues.title}
+              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
+              placeholder="Section title"
+              required
+            />
+          </label>
 
-        <label className="space-y-1.5 text-sm">
-          <span className="text-zinc-300">Type</span>
-          <input
-            name="type"
-            list="section-type-options"
-            value={selectedType}
-            onChange={(event) => {
-              handleTypeChange(event.currentTarget.value)
-            }}
-            className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
-            placeholder="e.g. hero"
-            required
-          />
-          <datalist id="section-type-options">
-            {typeOptions.map((option) => (
-              <option key={option} value={option} />
-            ))}
-          </datalist>
-        </label>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-zinc-300">Type</span>
+            <input
+              name="type"
+              list="section-type-options"
+              value={selectedType}
+              onChange={(event) => {
+                handleTypeChange(event.currentTarget.value)
+              }}
+              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
+              placeholder="e.g. hero"
+              required
+            />
+            <datalist id="section-type-options">
+              {typeOptions.map((option) => (
+                <option key={option} value={option} />
+              ))}
+            </datalist>
+          </label>
 
-        <label className="space-y-1.5 text-sm">
-          <span className="text-zinc-300">Order index</span>
-          <input
-            name="order_index"
-            type="number"
-            step={1}
-            defaultValue={initialValues.orderIndex}
-            className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
-            required
-          />
-        </label>
+          <label className="space-y-1.5 text-sm">
+            <span className="text-zinc-300">Order index</span>
+            <input
+              name="order_index"
+              type="number"
+              step={1}
+              defaultValue={initialValues.orderIndex}
+              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
+              required
+            />
+          </label>
 
-        <label className="flex items-end gap-2 pb-2 text-sm text-zinc-300">
-          <input
-            name="enabled"
-            type="checkbox"
-            defaultChecked={initialValues.enabled}
-            className="h-4 w-4 rounded border-zinc-600 bg-zinc-950"
-          />
-          Enabled
-        </label>
-      </div>
+          <label className="flex items-end gap-2 pb-2 text-sm text-zinc-300">
+            <input
+              name="enabled"
+              type="checkbox"
+              defaultChecked={initialValues.enabled}
+              className="h-4 w-4 rounded border-zinc-600 bg-zinc-950"
+            />
+            Enabled
+          </label>
+        </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <UploadField
-          label="Image"
-          target="image"
-          name="image_url"
-          defaultValue={initialValues.imageUrl}
-          disabled={isSubmitting}
-          helperText="Image upload (optional)"
-        />
-        <UploadField
-          label="Music"
-          target="music"
-          name="music_url"
-          defaultValue={initialValues.musicUrl}
-          disabled={isSubmitting}
-          helperText="Music upload (optional)"
-        />
-      </div>
-
-      <UploadField
-        label="Voice note"
-        target="voice-note"
-        name="voice_note_url"
-        defaultValue={initialValues.voiceNoteUrl}
-        disabled={isSubmitting}
-        helperText="Voice-note upload (optional)"
-      />
-
-      {isThreeDGalleryType ? (
-        <>
-          <ThreeDGalleryContentEditor
-            initialContent={galleryContent}
-            fallbackImageUrl={initialValues.imageUrl}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <UploadField
+            label="Image"
+            target="image"
+            name="image_url"
+            defaultValue={initialValues.imageUrl}
             disabled={isSubmitting}
-            onContentChange={setGalleryContent}
+            helperText="Image upload (optional)"
           />
-          <input type="hidden" name="content" value={galleryContentText} />
-        </>
-      ) : (
-        <label className="block space-y-1.5 text-sm">
-          <span className="text-zinc-300">Content (JSON)</span>
-          <textarea
-            name="content"
-            value={contentText}
-            onChange={(event) => {
-              setContentText(event.currentTarget.value)
-            }}
-            className="min-h-44 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
-            spellCheck={false}
+          <UploadField
+            label="Music"
+            target="music"
+            name="music_url"
+            defaultValue={initialValues.musicUrl}
+            disabled={isSubmitting}
+            helperText="Music upload (optional)"
           />
-        </label>
-      )}
+        </div>
 
-      {validationErrorMessage ? (
-        <p className="rounded-md border border-amber-800 bg-amber-900/30 px-3 py-2 text-sm text-amber-300">
-          {validationErrorMessage}
-        </p>
-      ) : null}
+        <UploadField
+          label="Voice note"
+          target="voice-note"
+          name="voice_note_url"
+          defaultValue={initialValues.voiceNoteUrl}
+          disabled={isSubmitting}
+          helperText="Voice-note upload (optional)"
+        />
 
-      {errorMessage ? (
-        <p className="rounded-md border border-red-800 bg-red-900/30 px-3 py-2 text-sm text-red-300">{errorMessage}</p>
-      ) : null}
+        {isThreeDGalleryType ? (
+          <>
+            <ThreeDGalleryContentEditor
+              initialContent={galleryContent}
+              fallbackImageUrl={initialValues.imageUrl}
+              disabled={isSubmitting}
+              onContentChange={setGalleryContent}
+            />
+            <input type="hidden" name="content" value={galleryContentText} />
+          </>
+        ) : (
+          <label className="block space-y-1.5 text-sm">
+            <span className="text-zinc-300">Content (JSON)</span>
+            <textarea
+              name="content"
+              value={contentText}
+              onChange={(event) => {
+                setContentText(event.currentTarget.value)
+              }}
+              className="min-h-44 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
+              spellCheck={false}
+            />
+          </label>
+        )}
 
-      <div className="flex flex-wrap justify-end gap-2">
+        {validationErrorMessage ? (
+          <p className="rounded-md border border-amber-800 bg-amber-900/30 px-3 py-2 text-sm text-amber-300">
+            {validationErrorMessage}
+          </p>
+        ) : null}
+
+        {errorMessage ? (
+          <p className="rounded-md border border-red-800 bg-red-900/30 px-3 py-2 text-sm text-red-300">{errorMessage}</p>
+        ) : null}
+      </div>
+
+      <div className="sticky bottom-0 flex shrink-0 flex-wrap justify-end gap-2 border-t border-zinc-800 bg-zinc-900/95 px-4 py-3 sm:px-6 supports-[backdrop-filter]:bg-zinc-900/80 supports-[backdrop-filter]:backdrop-blur">
         <button
           type="button"
           onClick={onClose}
@@ -320,43 +326,28 @@ export const SectionFormModal = ({
   onSubmit,
 }: SectionFormModalProps) => {
   const modalTitle = mode === 'create' ? 'Create section' : 'Edit section'
-
-  if (!isOpen) {
-    return null
-  }
-
   const initialValues = buildInitialValues(mode, section, typeOptions, defaultOrderIndex)
   const formInstanceKey = `${mode}-${section?.id ?? 'new'}`
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-zinc-950/80 px-4 py-8 sm:items-center">
-      <div className="w-full max-w-2xl rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:p-6">
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold text-zinc-100">{modalTitle}</h2>
-            <p className="text-sm text-zinc-400">All values are persisted directly to Supabase.</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isSubmitting}
-          >
-            Close
-          </button>
-        </div>
-
-        <SectionFormFields
-          key={formInstanceKey}
-          mode={mode}
-          typeOptions={typeOptions}
-          initialValues={initialValues}
-          isSubmitting={isSubmitting}
-          errorMessage={errorMessage}
-          onClose={onClose}
-          onSubmit={onSubmit}
-        />
-      </div>
-    </div>
+    <ScrollableAdminModal
+      isOpen={isOpen}
+      title={modalTitle}
+      description="All values are persisted directly to Supabase."
+      onClose={onClose}
+      isCloseDisabled={isSubmitting}
+      maxWidthClassName="max-w-6xl"
+    >
+      <SectionFormFields
+        key={formInstanceKey}
+        mode={mode}
+        typeOptions={typeOptions}
+        initialValues={initialValues}
+        isSubmitting={isSubmitting}
+        errorMessage={errorMessage}
+        onClose={onClose}
+        onSubmit={onSubmit}
+      />
+    </ScrollableAdminModal>
   )
 }
