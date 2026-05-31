@@ -31,12 +31,16 @@ const getBackMessage = (card: ThreeDGalleryCard): string => {
 
 const renderCardFront = (card: ThreeDGalleryCard, isCompactViewport: boolean) => {
   if (card.type === 'image') {
+    const imageAlt = card.caption ? card.caption : 'Gallery memory'
+
     return (
       <>
-        <img src={card.imageUrl} alt={card.caption} className="h-full w-full rounded-[1.15rem] object-cover" loading="lazy" />
-        <div className="pointer-events-none absolute inset-x-3 bottom-3 rounded-xl border border-rose-100/35 bg-zinc-950/45 px-3 py-2 text-left backdrop-blur-sm">
-          <p className="text-sm font-medium text-rose-50">{card.caption}</p>
-        </div>
+        <img src={card.imageUrl} alt={imageAlt} className="h-full w-full rounded-[1.15rem] object-cover" loading="lazy" />
+        {card.caption ? (
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 rounded-xl border border-rose-100/35 bg-zinc-950/45 px-3 py-2 text-left backdrop-blur-sm">
+            <p className="text-sm font-medium text-rose-50">{card.caption}</p>
+          </div>
+        ) : null}
       </>
     )
   }
