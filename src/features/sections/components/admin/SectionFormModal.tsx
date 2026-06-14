@@ -45,7 +45,6 @@ interface SectionInitialValues {
 const buildInitialValues = (
   mode: FormMode,
   section: RomanticSection | null,
-  typeOptions: string[],
   defaultOrderIndex: number,
 ): SectionInitialValues => {
   if (mode === 'edit' && section) {
@@ -347,7 +346,7 @@ export const SectionFormModal = ({
   onSubmit,
 }: SectionFormModalProps) => {
   const modalTitle = mode === 'create' ? 'Create section' : 'Edit section'
-  const initialValues = buildInitialValues(mode, section, typeOptions, defaultOrderIndex)
+  const initialValues = buildInitialValues(mode, section, defaultOrderIndex)
   const formInstanceKey = `${mode}-${section?.id ?? 'new'}`
   const [isGalleryBulkUploadBusy, setIsGalleryBulkUploadBusy] = useState(false)
 
