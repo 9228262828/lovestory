@@ -107,6 +107,7 @@ const SectionFormFields = ({
   }, [initialValues.type, typeOptions])
   const isThreeDGalleryType = selectedType.trim() === '3d-gallery'
   const isFormBusy = isSubmitting || isGalleryBulkUploadBusy
+  const hasSelectedType = selectedType.trim().length > 0
 
   const handleTypeChange = useCallback(
     (nextType: string) => {
@@ -209,15 +210,19 @@ const SectionFormFields = ({
               onChange={(event) => {
                 handleTypeChange(event.currentTarget.value)
               }}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
+              className={`w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none ring-zinc-500 transition [color-scheme:dark] focus:ring-1 disabled:cursor-not-allowed disabled:opacity-60 ${
+                hasSelectedType ? 'text-zinc-100' : 'text-zinc-400'
+              }`}
               required
               disabled={isFormBusy}
             >
-              <option value="" disabled>
-                Select a section type
+              <option value="" disabled className="bg-zinc-950 text-zinc-400">
+                Select section type
               </option>
               {availableTypeOptions.map((option) => (
-                <option key={option} value={option} />
+                <option key={option} value={option} className="bg-zinc-950 text-zinc-100">
+                  {option}
+                </option>
               ))}
             </select>
           </label>
