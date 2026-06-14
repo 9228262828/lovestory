@@ -63,7 +63,7 @@ const buildInitialValues = (
 
   return {
     title: '',
-    type: typeOptions[0] ?? '',
+    type: '',
     enabled: true,
     orderIndex: defaultOrderIndex.toString(),
     contentText: '{}',
@@ -101,6 +101,11 @@ const SectionFormFields = ({
   const [contentText, setContentText] = useState(initialValues.contentText)
   const [galleryContent, setGalleryContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const galleryContentText = useMemo(() => stringifyContent(galleryContent), [galleryContent])
+  const availableTypeOptions = useMemo(() => {
+    const initialType = initialValues.type.trim()
+    const options = initialType.length > 0 ? [...typeOptions, initialType] : typeOptions
+    return Array.from(new Set(options)).sort((left, right) => left.localeCompare(right))
+  }, [initialValues.type, typeOptions])
   const isThreeDGalleryType = selectedType.trim() === '3d-gallery'
   const isFormBusy = isSubmitting || isGalleryBulkUploadBusy
 
@@ -199,23 +204,23 @@ const SectionFormFields = ({
 
           <label className="space-y-1.5 text-sm">
             <span className="text-zinc-300">Type</span>
-            <input
+            <select
               name="type"
-              list="section-type-options"
               value={selectedType}
               onChange={(event) => {
                 handleTypeChange(event.currentTarget.value)
               }}
               className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
-              placeholder="e.g. hero"
               required
               disabled={isFormBusy}
-            />
-            <datalist id="section-type-options">
-              {typeOptions.map((option) => (
+            >
+              <option value="" disabled>
+                Select a section type
+              </option>
+              {availableTypeOptions.map((option) => (
                 <option key={option} value={option} />
               ))}
-            </datalist>
+            </select>
           </label>
 
           <label className="space-y-1.5 text-sm">
