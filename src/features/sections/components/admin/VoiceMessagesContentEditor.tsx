@@ -267,6 +267,7 @@ export const VoiceMessagesContentEditor = ({
   const [editorState, setEditorState] = useState<VoiceMessagesEditorState>(() => buildEditorState(initialContent))
   const [rawContentText, setRawContentText] = useState(() => stringifyContent(toContent(buildEditorState(initialContent))))
   const [rawContentError, setRawContentError] = useState<string | null>(null)
+  const canonicalContentText = stringifyContent(toContent(editorState))
 
   const commitEditorState = useCallback(
     (nextEditorState: VoiceMessagesEditorState) => {
@@ -498,7 +499,6 @@ export const VoiceMessagesContentEditor = ({
       <label className="block space-y-1.5 text-sm">
         <span className="text-zinc-300">Content (JSON)</span>
         <textarea
-          name="content"
           value={rawContentText}
           onChange={(event) => {
             handleRawContentChange(event.currentTarget.value)
@@ -508,6 +508,7 @@ export const VoiceMessagesContentEditor = ({
           disabled={disabled}
         />
       </label>
+      <input type="hidden" name="content" value={canonicalContentText} />
 
       {rawContentError ? (
         <p className="rounded-md border border-amber-800 bg-amber-900/30 px-3 py-2 text-xs text-amber-300">{rawContentError}</p>

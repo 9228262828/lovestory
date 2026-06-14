@@ -171,12 +171,18 @@ const SectionFormFields = ({
         }
 
         let parsedContent: JsonValue
-        try {
-          const nextContentText = formData.get('content')?.toString() ?? ''
-          parsedContent = JSON.parse(nextContentText) as JsonValue
-        } catch {
-          setValidationErrorMessage('Content must be valid JSON.')
-          return
+        if (normalizedType === '3d-gallery') {
+          parsedContent = galleryContent
+        } else if (normalizedType === 'voice-messages') {
+          parsedContent = voiceMessagesContent
+        } else {
+          try {
+            const nextContentText = formData.get('content')?.toString() ?? ''
+            parsedContent = JSON.parse(nextContentText) as JsonValue
+          } catch {
+            setValidationErrorMessage('Content must be valid JSON.')
+            return
+          }
         }
 
         const enabledValue = formData.get('enabled')
