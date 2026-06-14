@@ -18,6 +18,7 @@ export type SectionType =
   | '3d-gallery'
   | 'kiss-counter'
   | 'life-start-counter'
+  | 'love-letter'
 
 export interface RomanticSection {
   id: string
