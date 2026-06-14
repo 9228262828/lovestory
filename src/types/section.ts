@@ -17,6 +17,7 @@ export type SectionType =
   | 'cinematic-intro'
   | '3d-gallery'
   | 'kiss-counter'
+  | 'life-start-counter'
 
 export interface RomanticSection {
   id: string
