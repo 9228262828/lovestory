@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ScrollableAdminModal } from '@/components/ui/ScrollableAdminModal'
 import { ThreeDGalleryContentEditor } from '@/features/sections/components/admin/ThreeDGalleryContentEditor'
+import { VoiceMessagesContentEditor } from '@/features/sections/components/admin/VoiceMessagesContentEditor'
 import { UploadField } from '@/features/uploads/components/UploadField'
 import type { SectionUpsertInput } from '@/services/supabase/sections.service'
 import type { JsonValue, RomanticSection } from '@/types/section'
@@ -99,6 +100,7 @@ const SectionFormFields = ({
   const [selectedType, setSelectedType] = useState(initialValues.type)
   const [contentText, setContentText] = useState(initialValues.contentText)
   const [galleryContent, setGalleryContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
+  const [voiceMessagesContent, setVoiceMessagesContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const galleryContentText = useMemo(() => stringifyContent(galleryContent), [galleryContent])
   const availableTypeOptions = useMemo(() => {
     const initialType = initialValues.type.trim()
@@ -106,24 +108,34 @@ const SectionFormFields = ({
     return Array.from(new Set(options)).sort((left, right) => left.localeCompare(right))
   }, [initialValues.type, typeOptions])
   const isThreeDGalleryType = selectedType.trim() === '3d-gallery'
+  const isVoiceMessagesType = selectedType.trim() === 'voice-messages'
   const isFormBusy = isSubmitting || isGalleryBulkUploadBusy
   const hasSelectedType = selectedType.trim().length > 0
 
   const handleTypeChange = useCallback(
     (nextType: string) => {
+      const previousType = selectedType.trim()
       const normalizedType = nextType.trim()
+      const currentContent =
+        previousType === '3d-gallery'
+          ? galleryContent
+          : previousType === 'voice-messages'
+            ? voiceMessagesContent
+            : parseContent(contentText)
 
-      if (normalizedType === '3d-gallery' && selectedType.trim() !== '3d-gallery') {
-        setGalleryContent(parseContent(contentText))
+      if (normalizedType === '3d-gallery') {
+        setGalleryContent(currentContent)
+      } else if (normalizedType === 'voice-messages') {
+        setVoiceMessagesContent(currentContent)
       }
 
-      if (normalizedType !== '3d-gallery' && selectedType.trim() === '3d-gallery') {
-        setContentText(galleryContentText)
+      if (normalizedType !== '3d-gallery' && normalizedType !== 'voice-messages') {
+        setContentText(stringifyContent(currentContent))
       }
 
       setSelectedType(nextType)
     },
-    [contentText, galleryContentText, selectedType],
+    [contentText, galleryContent, selectedType, voiceMessagesContent],
   )
 
   return (
@@ -291,6 +303,12 @@ const SectionFormFields = ({
             />
             <input type="hidden" name="content" value={galleryContentText} />
           </>
+        ) : isVoiceMessagesType ? (
+          <VoiceMessagesContentEditor
+            initialContent={voiceMessagesContent}
+            disabled={isFormBusy}
+            onContentChange={setVoiceMessagesContent}
+          />
         ) : (
           <label className="block space-y-1.5 text-sm">
             <span className="text-zinc-300">Content (JSON)</span>

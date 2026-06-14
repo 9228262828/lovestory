@@ -19,6 +19,7 @@ export type SectionType =
   | 'kiss-counter'
   | 'life-start-counter'
   | 'love-letter'
+  | 'voice-messages'
 
 export interface RomanticSection {
   id: string
