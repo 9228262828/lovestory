@@ -33,7 +33,7 @@ export interface ThreeDGalleryContent {
   cards: ThreeDGalleryCard[]
 }
 
-const MAX_CARD_COUNT = 20
+const MAX_CARD_COUNT = 60
 
 const defaultCards: ThreeDGalleryCard[] = [
   {
