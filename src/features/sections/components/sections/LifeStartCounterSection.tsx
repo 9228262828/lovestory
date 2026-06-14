@@ -170,8 +170,6 @@ export const LifeStartCounterSection = ({ section }: LifeStartCounterSectionProp
   }, [startTimestamp])
 
   useEffect(() => {
-    setCurrentTimestamp(Date.now())
-
     const intervalId = window.setInterval(() => {
       setCurrentTimestamp(Date.now())
     }, 1000)
@@ -179,7 +177,7 @@ export const LifeStartCounterSection = ({ section }: LifeStartCounterSectionProp
     return () => {
       window.clearInterval(intervalId)
     }
-  }, [startTimestamp])
+  }, [])
 
   const counterItems = [
     { label: 'Total days', value: totals.days },
