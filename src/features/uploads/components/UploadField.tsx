@@ -10,6 +10,7 @@ interface UploadFieldProps {
   disabled?: boolean
   helperText?: string
   namespace?: string
+  variant?: 'default' | 'compact'
   onValueChange?: (value: string | null) => void
 }
 
@@ -25,6 +26,7 @@ export const UploadField = ({
   disabled = false,
   helperText,
   namespace = 'sections',
+  variant = 'default',
   onValueChange,
 }: UploadFieldProps) => {
   const inputId = useId()
@@ -37,6 +39,7 @@ export const UploadField = ({
   const [fileUrl, setFileUrl] = useState<string | null>(defaultValue)
   const config = getUploadTargetConfig(target)
   const isBusy = disabled || isUploading || isRemoving
+  const isCompact = variant === 'compact'
 
   const updateValue = (nextValue: string | null) => {
     setFileUrl(nextValue)
@@ -186,7 +189,7 @@ export const UploadField = ({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        className={`min-h-32 rounded-lg border px-3 py-4 text-sm transition ${
+        className={`${isCompact ? 'min-h-24 px-3 py-3' : 'min-h-32 px-3 py-4'} rounded-lg border text-sm transition ${
           isDragActive
             ? 'border-blue-500 bg-blue-950/20'
             : 'border-zinc-700 bg-zinc-950 hover:border-zinc-500'
@@ -225,7 +228,12 @@ export const UploadField = ({
       {fileUrl ? (
         <div className="rounded-lg border border-zinc-700 bg-zinc-950/80 p-2">
           {config.previewKind === 'image' ? (
-            <img src={fileUrl} alt={`${label} preview`} className="max-h-52 w-full rounded-md object-cover" loading="lazy" />
+            <img
+              src={fileUrl}
+              alt={`${label} preview`}
+              className={`${isCompact ? 'h-24' : 'max-h-52'} w-full rounded-md object-cover`}
+              loading="lazy"
+            />
           ) : (
             <audio controls src={fileUrl} className="w-full" preload="metadata">
               Your browser does not support audio preview.

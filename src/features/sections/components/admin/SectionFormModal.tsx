@@ -78,8 +78,10 @@ interface SectionFormFieldsProps {
   typeOptions: string[]
   initialValues: SectionInitialValues
   isSubmitting: boolean
+  isGalleryBulkUploadBusy: boolean
   errorMessage: string | null
   onClose: () => void
+  onGalleryBulkUploadBusyChange: (isBusy: boolean) => void
   onSubmit: (payload: SectionUpsertInput) => Promise<boolean>
 }
 
@@ -88,8 +90,10 @@ const SectionFormFields = ({
   typeOptions,
   initialValues,
   isSubmitting,
+  isGalleryBulkUploadBusy,
   errorMessage,
   onClose,
+  onGalleryBulkUploadBusyChange,
   onSubmit,
 }: SectionFormFieldsProps) => {
   const [validationErrorMessage, setValidationErrorMessage] = useState<string | null>(null)
@@ -98,6 +102,7 @@ const SectionFormFields = ({
   const [galleryContent, setGalleryContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const galleryContentText = useMemo(() => stringifyContent(galleryContent), [galleryContent])
   const isThreeDGalleryType = selectedType.trim() === '3d-gallery'
+  const isFormBusy = isSubmitting || isGalleryBulkUploadBusy
 
   const handleTypeChange = useCallback(
     (nextType: string) => {
@@ -122,6 +127,11 @@ const SectionFormFields = ({
       onSubmit={(event) => {
         event.preventDefault()
         setValidationErrorMessage(null)
+
+        if (isGalleryBulkUploadBusy) {
+          setValidationErrorMessage('Wait for the bulk image upload to finish before saving.')
+          return
+        }
 
         const formData = new FormData(event.currentTarget)
         const normalizedTitle = (formData.get('title')?.toString() ?? '').trim()
@@ -183,6 +193,7 @@ const SectionFormFields = ({
               className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
               placeholder="Section title"
               required
+              disabled={isFormBusy}
             />
           </label>
 
@@ -198,6 +209,7 @@ const SectionFormFields = ({
               className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
               placeholder="e.g. hero"
               required
+              disabled={isFormBusy}
             />
             <datalist id="section-type-options">
               {typeOptions.map((option) => (
@@ -215,6 +227,7 @@ const SectionFormFields = ({
               defaultValue={initialValues.orderIndex}
               className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
               required
+              disabled={isFormBusy}
             />
           </label>
 
@@ -224,6 +237,7 @@ const SectionFormFields = ({
               type="checkbox"
               defaultChecked={initialValues.enabled}
               className="h-4 w-4 rounded border-zinc-600 bg-zinc-950"
+              disabled={isFormBusy}
             />
             Enabled
           </label>
@@ -235,7 +249,7 @@ const SectionFormFields = ({
             target="image"
             name="image_url"
             defaultValue={initialValues.imageUrl}
-            disabled={isSubmitting}
+            disabled={isFormBusy}
             helperText="Image upload (optional)"
           />
           <UploadField
@@ -243,7 +257,7 @@ const SectionFormFields = ({
             target="music"
             name="music_url"
             defaultValue={initialValues.musicUrl}
-            disabled={isSubmitting}
+            disabled={isFormBusy}
             helperText="Music upload (optional)"
           />
         </div>
@@ -253,7 +267,7 @@ const SectionFormFields = ({
           target="voice-note"
           name="voice_note_url"
           defaultValue={initialValues.voiceNoteUrl}
-          disabled={isSubmitting}
+          disabled={isFormBusy}
           helperText="Voice-note upload (optional)"
         />
 
@@ -262,8 +276,9 @@ const SectionFormFields = ({
             <ThreeDGalleryContentEditor
               initialContent={galleryContent}
               fallbackImageUrl={initialValues.imageUrl}
-              disabled={isSubmitting}
+              disabled={isFormBusy}
               onContentChange={setGalleryContent}
+              onBulkUploadBusyChange={onGalleryBulkUploadBusyChange}
             />
             <input type="hidden" name="content" value={galleryContentText} />
           </>
@@ -278,6 +293,7 @@ const SectionFormFields = ({
               }}
               className="min-h-44 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
               spellCheck={false}
+              disabled={isFormBusy}
             />
           </label>
         )}
@@ -298,16 +314,16 @@ const SectionFormFields = ({
           type="button"
           onClick={onClose}
           className="rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={isSubmitting}
+          disabled={isFormBusy}
         >
           Cancel
         </button>
         <button
           type="submit"
           className="rounded-md border border-blue-700 bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
+          disabled={isFormBusy}
         >
-          {isSubmitting ? 'Saving...' : mode === 'create' ? 'Create section' : 'Save changes'}
+          {isGalleryBulkUploadBusy ? 'Uploading images...' : isSubmitting ? 'Saving...' : mode === 'create' ? 'Create section' : 'Save changes'}
         </button>
       </div>
     </form>
@@ -328,6 +344,7 @@ export const SectionFormModal = ({
   const modalTitle = mode === 'create' ? 'Create section' : 'Edit section'
   const initialValues = buildInitialValues(mode, section, typeOptions, defaultOrderIndex)
   const formInstanceKey = `${mode}-${section?.id ?? 'new'}`
+  const [isGalleryBulkUploadBusy, setIsGalleryBulkUploadBusy] = useState(false)
 
   return (
     <ScrollableAdminModal
@@ -335,7 +352,7 @@ export const SectionFormModal = ({
       title={modalTitle}
       description="All values are persisted directly to Supabase."
       onClose={onClose}
-      isCloseDisabled={isSubmitting}
+      isCloseDisabled={isSubmitting || isGalleryBulkUploadBusy}
       maxWidthClassName="max-w-6xl"
     >
       <SectionFormFields
@@ -344,8 +361,10 @@ export const SectionFormModal = ({
         typeOptions={typeOptions}
         initialValues={initialValues}
         isSubmitting={isSubmitting}
+        isGalleryBulkUploadBusy={isGalleryBulkUploadBusy}
         errorMessage={errorMessage}
         onClose={onClose}
+        onGalleryBulkUploadBusyChange={setIsGalleryBulkUploadBusy}
         onSubmit={onSubmit}
       />
     </ScrollableAdminModal>
