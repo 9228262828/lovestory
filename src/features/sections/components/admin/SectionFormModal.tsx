@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ScrollableAdminModal } from '@/components/ui/ScrollableAdminModal'
+import { EmotionalEmergencyKitContentEditor } from '@/features/sections/components/admin/EmotionalEmergencyKitContentEditor'
 import { ReasonsILoveYouContentEditor } from '@/features/sections/components/admin/ReasonsILoveYouContentEditor'
 import { ThreeDGalleryContentEditor } from '@/features/sections/components/admin/ThreeDGalleryContentEditor'
 import { VoiceMessagesContentEditor } from '@/features/sections/components/admin/VoiceMessagesContentEditor'
@@ -103,6 +104,7 @@ const SectionFormFields = ({
   const [galleryContent, setGalleryContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const [voiceMessagesContent, setVoiceMessagesContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const [reasonsLoveContent, setReasonsLoveContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
+  const [emotionalKitContent, setEmotionalKitContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const galleryContentText = useMemo(() => stringifyContent(galleryContent), [galleryContent])
   const availableTypeOptions = useMemo(() => {
     const initialType = initialValues.type.trim()
@@ -112,6 +114,7 @@ const SectionFormFields = ({
   const isThreeDGalleryType = selectedType.trim() === '3d-gallery'
   const isVoiceMessagesType = selectedType.trim() === 'voice-messages'
   const isReasonsLoveType = selectedType.trim() === 'reasons-i-love-you'
+  const isEmotionalKitType = selectedType.trim() === 'emotional-emergency-kit'
   const isFormBusy = isSubmitting || isGalleryBulkUploadBusy
   const hasSelectedType = selectedType.trim().length > 0
 
@@ -126,7 +129,9 @@ const SectionFormFields = ({
             ? voiceMessagesContent
             : previousType === 'reasons-i-love-you'
               ? reasonsLoveContent
-              : parseContent(contentText)
+              : previousType === 'emotional-emergency-kit'
+                ? emotionalKitContent
+                : parseContent(contentText)
 
       if (normalizedType === '3d-gallery') {
         setGalleryContent(currentContent)
@@ -134,15 +139,22 @@ const SectionFormFields = ({
         setVoiceMessagesContent(currentContent)
       } else if (normalizedType === 'reasons-i-love-you') {
         setReasonsLoveContent(currentContent)
+      } else if (normalizedType === 'emotional-emergency-kit') {
+        setEmotionalKitContent(currentContent)
       }
 
-      if (normalizedType !== '3d-gallery' && normalizedType !== 'voice-messages' && normalizedType !== 'reasons-i-love-you') {
+      if (
+        normalizedType !== '3d-gallery' &&
+        normalizedType !== 'voice-messages' &&
+        normalizedType !== 'reasons-i-love-you' &&
+        normalizedType !== 'emotional-emergency-kit'
+      ) {
         setContentText(stringifyContent(currentContent))
       }
 
       setSelectedType(nextType)
     },
-    [contentText, galleryContent, reasonsLoveContent, selectedType, voiceMessagesContent],
+    [contentText, emotionalKitContent, galleryContent, reasonsLoveContent, selectedType, voiceMessagesContent],
   )
 
   return (
@@ -184,6 +196,8 @@ const SectionFormFields = ({
           parsedContent = voiceMessagesContent
         } else if (normalizedType === 'reasons-i-love-you') {
           parsedContent = reasonsLoveContent
+        } else if (normalizedType === 'emotional-emergency-kit') {
+          parsedContent = emotionalKitContent
         } else {
           try {
             const nextContentText = formData.get('content')?.toString() ?? ''
@@ -329,6 +343,12 @@ const SectionFormFields = ({
             initialContent={reasonsLoveContent}
             disabled={isFormBusy}
             onContentChange={setReasonsLoveContent}
+          />
+        ) : isEmotionalKitType ? (
+          <EmotionalEmergencyKitContentEditor
+            initialContent={emotionalKitContent}
+            disabled={isFormBusy}
+            onContentChange={setEmotionalKitContent}
           />
         ) : (
           <label className="block space-y-1.5 text-sm">

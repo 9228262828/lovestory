@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import { CinematicIntroSection } from '@/features/sections/components/sections/CinematicIntroSection'
+import { EmotionalEmergencyKitSection } from '@/features/sections/components/sections/EmotionalEmergencyKitSection'
 import { KissCounterSection } from '@/features/sections/components/sections/KissCounterSection'
 import { LifeStartCounterSection } from '@/features/sections/components/sections/LifeStartCounterSection'
 import { LoveLetterSection } from '@/features/sections/components/sections/LoveLetterSection'
@@ -24,6 +25,7 @@ const sectionRegistry = new Map<string, SectionComponent>([
   ['love-letter', LoveLetterSection],
   ['voice-messages', VoiceMessagesSection],
   ['reasons-i-love-you', ReasonsILoveYouSection],
+  ['emotional-emergency-kit', EmotionalEmergencyKitSection],
 ])
 
 export const registerSectionType = (type: string, component: SectionComponent) => {
@@ -47,6 +49,7 @@ const defaultRegistryFallback: Record<string, SectionComponent> = {
   'love-letter': LoveLetterSection,
   'voice-messages': VoiceMessagesSection,
   'reasons-i-love-you': ReasonsILoveYouSection,
+  'emotional-emergency-kit': EmotionalEmergencyKitSection,
 }
 
 export const getSectionComponent = (type: string): SectionComponent => {
