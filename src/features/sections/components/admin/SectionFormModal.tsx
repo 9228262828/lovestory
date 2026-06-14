@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ScrollableAdminModal } from '@/components/ui/ScrollableAdminModal'
+import { ReasonsILoveYouContentEditor } from '@/features/sections/components/admin/ReasonsILoveYouContentEditor'
 import { ThreeDGalleryContentEditor } from '@/features/sections/components/admin/ThreeDGalleryContentEditor'
 import { VoiceMessagesContentEditor } from '@/features/sections/components/admin/VoiceMessagesContentEditor'
 import { UploadField } from '@/features/uploads/components/UploadField'
@@ -101,6 +102,7 @@ const SectionFormFields = ({
   const [contentText, setContentText] = useState(initialValues.contentText)
   const [galleryContent, setGalleryContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const [voiceMessagesContent, setVoiceMessagesContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
+  const [reasonsLoveContent, setReasonsLoveContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const galleryContentText = useMemo(() => stringifyContent(galleryContent), [galleryContent])
   const availableTypeOptions = useMemo(() => {
     const initialType = initialValues.type.trim()
@@ -109,6 +111,7 @@ const SectionFormFields = ({
   }, [initialValues.type, typeOptions])
   const isThreeDGalleryType = selectedType.trim() === '3d-gallery'
   const isVoiceMessagesType = selectedType.trim() === 'voice-messages'
+  const isReasonsLoveType = selectedType.trim() === 'reasons-i-love-you'
   const isFormBusy = isSubmitting || isGalleryBulkUploadBusy
   const hasSelectedType = selectedType.trim().length > 0
 
@@ -121,21 +124,25 @@ const SectionFormFields = ({
           ? galleryContent
           : previousType === 'voice-messages'
             ? voiceMessagesContent
-            : parseContent(contentText)
+            : previousType === 'reasons-i-love-you'
+              ? reasonsLoveContent
+              : parseContent(contentText)
 
       if (normalizedType === '3d-gallery') {
         setGalleryContent(currentContent)
       } else if (normalizedType === 'voice-messages') {
         setVoiceMessagesContent(currentContent)
+      } else if (normalizedType === 'reasons-i-love-you') {
+        setReasonsLoveContent(currentContent)
       }
 
-      if (normalizedType !== '3d-gallery' && normalizedType !== 'voice-messages') {
+      if (normalizedType !== '3d-gallery' && normalizedType !== 'voice-messages' && normalizedType !== 'reasons-i-love-you') {
         setContentText(stringifyContent(currentContent))
       }
 
       setSelectedType(nextType)
     },
-    [contentText, galleryContent, selectedType, voiceMessagesContent],
+    [contentText, galleryContent, reasonsLoveContent, selectedType, voiceMessagesContent],
   )
 
   return (
@@ -175,6 +182,8 @@ const SectionFormFields = ({
           parsedContent = galleryContent
         } else if (normalizedType === 'voice-messages') {
           parsedContent = voiceMessagesContent
+        } else if (normalizedType === 'reasons-i-love-you') {
+          parsedContent = reasonsLoveContent
         } else {
           try {
             const nextContentText = formData.get('content')?.toString() ?? ''
@@ -314,6 +323,12 @@ const SectionFormFields = ({
             initialContent={voiceMessagesContent}
             disabled={isFormBusy}
             onContentChange={setVoiceMessagesContent}
+          />
+        ) : isReasonsLoveType ? (
+          <ReasonsILoveYouContentEditor
+            initialContent={reasonsLoveContent}
+            disabled={isFormBusy}
+            onContentChange={setReasonsLoveContent}
           />
         ) : (
           <label className="block space-y-1.5 text-sm">

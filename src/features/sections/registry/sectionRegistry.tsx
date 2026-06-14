@@ -4,6 +4,7 @@ import { KissCounterSection } from '@/features/sections/components/sections/Kiss
 import { LifeStartCounterSection } from '@/features/sections/components/sections/LifeStartCounterSection'
 import { LoveLetterSection } from '@/features/sections/components/sections/LoveLetterSection'
 import { PlaceholderSection } from '@/features/sections/components/sections/PlaceholderSection'
+import { ReasonsILoveYouSection } from '@/features/sections/components/sections/ReasonsILoveYouSection'
 import { ThreeDRomanticGallerySection } from '@/features/sections/components/sections/ThreeDRomanticGallerySection'
 import { VoiceMessagesSection } from '@/features/sections/components/sections/VoiceMessagesSection'
 import type { RomanticSection } from '@/types/section'
@@ -22,6 +23,7 @@ const sectionRegistry = new Map<string, SectionComponent>([
   ['life-start-counter', LifeStartCounterSection],
   ['love-letter', LoveLetterSection],
   ['voice-messages', VoiceMessagesSection],
+  ['reasons-i-love-you', ReasonsILoveYouSection],
 ])
 
 export const registerSectionType = (type: string, component: SectionComponent) => {
@@ -44,6 +46,7 @@ const defaultRegistryFallback: Record<string, SectionComponent> = {
   'life-start-counter': LifeStartCounterSection,
   'love-letter': LoveLetterSection,
   'voice-messages': VoiceMessagesSection,
+  'reasons-i-love-you': ReasonsILoveYouSection,
 }
 
 export const getSectionComponent = (type: string): SectionComponent => {
