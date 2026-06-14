@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import type { JsonValue, RomanticSection } from '@/types/section'
 
@@ -6,11 +6,16 @@ interface LoveLetterSectionProps {
   section: RomanticSection
 }
 
+type PaperStyle = 'classic' | 'blush' | 'midnight'
+
 interface LoveLetterContent {
   title: string
+  introText: string
   buttonText: string
   letter: string
   signature: string
+  paperStyle: PaperStyle
+  showMusic: boolean
   showParticles: boolean
   enableGlow: boolean
 }
@@ -34,11 +39,54 @@ const sectionEase: [number, number, number, number] = [0.22, 1, 0.36, 1]
 
 const defaultContent: LoveLetterContent = {
   title: 'A Letter To Asmaa',
+  introText: 'There are words I kept close to my heart, folded carefully, waiting for the right moment to reach you.',
   buttonText: 'Open My Letter',
   letter: 'My love, from the first day I knew you, everything became different...',
   signature: 'Forever yours, Ahmed',
+  paperStyle: 'classic',
+  showMusic: false,
   showParticles: true,
   enableGlow: true,
+}
+
+const paperStyles: Record<
+  PaperStyle,
+  {
+    article: string
+    surface: string
+    ink: string
+    muted: string
+    rule: string
+    signature: string
+  }
+> = {
+  classic: {
+    article: 'border-rose-100/80 bg-[#fff8ef] text-stone-900 shadow-[0_35px_90px_-55px_rgba(120,53,15,0.75)]',
+    surface:
+      'bg-[radial-gradient(circle_at_20%_12%,rgba(255,255,255,0.9),transparent_28%),linear-gradient(135deg,rgba(255,247,237,0.96),rgba(255,241,242,0.94))]',
+    ink: 'text-stone-800',
+    muted: 'text-rose-700/75',
+    rule: 'border-rose-200/70',
+    signature: 'text-rose-800',
+  },
+  blush: {
+    article: 'border-pink-100/85 bg-rose-50 text-zinc-900 shadow-[0_35px_90px_-55px_rgba(190,24,93,0.78)]',
+    surface:
+      'bg-[radial-gradient(circle_at_18%_10%,rgba(255,255,255,0.9),transparent_30%),linear-gradient(135deg,rgba(255,241,242,0.98),rgba(252,231,243,0.94))]',
+    ink: 'text-zinc-800',
+    muted: 'text-pink-700/75',
+    rule: 'border-pink-200/80',
+    signature: 'text-pink-800',
+  },
+  midnight: {
+    article: 'border-rose-100/25 bg-zinc-950 text-rose-50 shadow-[0_35px_90px_-55px_rgba(251,113,133,0.7)]',
+    surface:
+      'bg-[radial-gradient(circle_at_18%_10%,rgba(251,113,133,0.18),transparent_30%),linear-gradient(135deg,rgba(24,24,27,0.98),rgba(49,22,44,0.96))]',
+    ink: 'text-rose-50/88',
+    muted: 'text-rose-100/62',
+    rule: 'border-rose-100/15',
+    signature: 'text-rose-100',
+  },
 }
 
 const isRecord = (value: JsonValue): value is Record<string, JsonValue> => {
@@ -53,6 +101,14 @@ const getBoolean = (value: JsonValue | undefined, fallback: boolean): boolean =>
   return typeof value === 'boolean' ? value : fallback
 }
 
+const getPaperStyle = (value: JsonValue | undefined): PaperStyle => {
+  if (value === 'blush' || value === 'midnight' || value === 'classic') {
+    return value
+  }
+
+  return defaultContent.paperStyle
+}
+
 const resolveLoveLetterContent = (section: RomanticSection): LoveLetterContent => {
   if (!isRecord(section.content)) {
     return {
@@ -63,58 +119,46 @@ const resolveLoveLetterContent = (section: RomanticSection): LoveLetterContent =
 
   return {
     title: getString(section.content.title, section.title || defaultContent.title),
+    introText: getString(section.content.introText, defaultContent.introText),
     buttonText: getString(section.content.buttonText, defaultContent.buttonText),
     letter: getString(section.content.letter, defaultContent.letter),
     signature: getString(section.content.signature, defaultContent.signature),
+    paperStyle: getPaperStyle(section.content.paperStyle),
+    showMusic: getBoolean(section.content.showMusic, defaultContent.showMusic),
     showParticles: getBoolean(section.content.showParticles, defaultContent.showParticles),
     enableGlow: getBoolean(section.content.enableGlow, defaultContent.enableGlow),
   }
 }
 
 const buildParticles = (): ParticleState[] => {
-  return Array.from({ length: 16 }, (_, index) => ({
+  return Array.from({ length: 18 }, (_, index) => ({
     id: index,
-    left: `${(index * 37 + 13) % 100}%`,
-    top: `${(index * 53 + 19) % 100}%`,
-    size: 4 + ((index * 5) % 9),
-    duration: 8 + (index % 5),
-    delay: (index % 6) * 0.28,
-    opacity: 0.16 + (index % 4) * 0.08,
+    left: `${(index * 37 + 11) % 100}%`,
+    top: `${(index * 53 + 17) % 100}%`,
+    size: 4 + ((index * 5) % 10),
+    duration: 9 + (index % 6),
+    delay: (index % 7) * 0.24,
+    opacity: 0.14 + (index % 4) * 0.08,
   }))
 }
 
-const splitLetterIntoLines = (letter: string): string[] => {
-  const explicitLines = letter
-    .replace(/\r\n/g, '\n')
-    .split(/\n+/)
-    .map((line) => line.trim())
+const getLetterParagraphs = (letter: string): string[] => {
+  const normalizedLetter = letter.replace(/\r\n/g, '\n').trim()
+
+  if (normalizedLetter.length === 0) {
+    return [defaultContent.letter]
+  }
+
+  const paragraphBreaks = normalizedLetter
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim())
     .filter(Boolean)
 
-  if (explicitLines.length > 1) {
-    return explicitLines
+  if (paragraphBreaks.length > 0) {
+    return paragraphBreaks
   }
 
-  const words = (explicitLines[0] ?? letter.trim()).split(/\s+/).filter(Boolean)
-  const lines: string[] = []
-  let currentLine = ''
-
-  words.forEach((word) => {
-    const nextLine = currentLine.length > 0 ? `${currentLine} ${word}` : word
-
-    if (nextLine.length > 88 && currentLine.length > 0) {
-      lines.push(currentLine)
-      currentLine = word
-      return
-    }
-
-    currentLine = nextLine
-  })
-
-  if (currentLine.length > 0) {
-    lines.push(currentLine)
-  }
-
-  return lines.length > 0 ? lines : [defaultContent.letter]
+  return [normalizedLetter]
 }
 
 const ParticleLayer = memo(({ particles, reduceMotion }: ParticleLayerProps) => {
@@ -130,15 +174,15 @@ const ParticleLayer = memo(({ particles, reduceMotion }: ParticleLayerProps) => 
             width: particle.size,
             height: particle.size,
             opacity: particle.opacity,
-            filter: 'blur(0.6px)',
+            filter: 'blur(0.65px)',
           }}
           animate={
             reduceMotion
               ? undefined
               : {
-                  y: [-7, 9, -7],
-                  x: [-2, 2, -2],
-                  scale: [1, 1.26, 1],
+                  y: [-8, 11, -8],
+                  x: [-2, 3, -2],
+                  scale: [1, 1.22, 1],
                 }
           }
           transition={
@@ -162,186 +206,302 @@ ParticleLayer.displayName = 'LoveLetterParticleLayer'
 
 export const LoveLetterSection = ({ section }: LoveLetterSectionProps) => {
   const reduceMotion = useReducedMotion()
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false)
+  const [musicError, setMusicError] = useState<string | null>(null)
   const content = useMemo(() => resolveLoveLetterContent(section), [section])
-  const letterLines = useMemo(() => splitLetterIntoLines(content.letter), [content.letter])
+  const paragraphs = useMemo(() => getLetterParagraphs(content.letter), [content.letter])
   const particles = useMemo(() => (content.showParticles ? buildParticles() : []), [content.showParticles])
-  const animationDuration = reduceMotion ? 0.01 : 0.72
+  const selectedPaperStyle = paperStyles[content.paperStyle]
+  const canUseMusic = content.showMusic && Boolean(section.music_url)
+  const duration = reduceMotion ? 0.01 : 0.82
+
+  const handleOpenLetter = () => {
+    setIsOpen(true)
+  }
+
+  const handleMusicToggle = async () => {
+    if (!audioRef.current) {
+      return
+    }
+
+    if (audioRef.current.paused) {
+      try {
+        await audioRef.current.play()
+        setMusicError(null)
+        setIsMusicPlaying(true)
+      } catch {
+        setMusicError('Tap again if your browser needs a direct sound gesture.')
+        setIsMusicPlaying(false)
+      }
+      return
+    }
+
+    audioRef.current.pause()
+    setIsMusicPlaying(false)
+  }
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: reduceMotion ? 0 : 16 }}
+      initial={{ opacity: 0, y: reduceMotion ? 0 : 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: reduceMotion ? 0.2 : 0.7, ease: sectionEase }}
-      className={`relative -mx-4 overflow-hidden bg-gradient-to-br from-rose-950 via-pink-950 to-zinc-950 px-4 py-8 text-white shadow-[0_30px_90px_-58px_rgba(244,63,94,0.9)] sm:mx-0 sm:rounded-[2rem] sm:px-8 sm:py-11 lg:px-10 ${
+      className={`relative -mx-4 overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(251,113,133,0.32),transparent_36%),linear-gradient(135deg,#25061a_0%,#4a1236_48%,#09090b_100%)] px-4 py-10 text-white shadow-[0_36px_100px_-60px_rgba(244,63,94,0.95)] sm:mx-0 sm:rounded-[2.25rem] sm:px-8 sm:py-12 lg:px-10 ${
         content.enableGlow ? 'shadow-rose-500/30' : ''
       }`}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(251,113,133,0.34),transparent_38%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_86%_78%,rgba(244,114,182,0.24),transparent_35%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),transparent_44%,rgba(255,255,255,0.06))]" />
-
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_12%,rgba(244,114,182,0.22),transparent_34%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,rgba(255,255,255,0.08),transparent_38%,rgba(255,255,255,0.05))]" />
       {content.showParticles ? <ParticleLayer particles={particles} reduceMotion={reduceMotion} /> : null}
 
-      <div className="relative z-10 mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
-        <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left">
-          <motion.p
-            initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0.18 : 0.5, ease: sectionEase }}
-            className="text-[11px] font-semibold uppercase tracking-[0.34em] text-rose-100/70 sm:text-xs"
-          >
-            Love Letter
-          </motion.p>
-          <motion.h2
-            initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0.2 : 0.65, delay: reduceMotion ? 0 : 0.08, ease: sectionEase }}
-            className={`mt-4 text-3xl font-semibold leading-tight tracking-tight text-rose-50 sm:text-5xl lg:text-6xl ${
-              content.enableGlow ? '[text-shadow:0_0_34px_rgba(251,113,133,0.4)]' : ''
-            }`}
-          >
-            {content.title}
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: reduceMotion ? 0 : 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0.2 : 0.58, delay: reduceMotion ? 0 : 0.14, ease: sectionEase }}
-            className="mx-auto mt-4 max-w-xl text-sm leading-6 text-rose-100/75 sm:text-base lg:mx-0"
-          >
-            A quiet promise folded for Asmaa, waiting to be opened by one gentle tap.
-          </motion.p>
-          <motion.button
-            type="button"
-            aria-expanded={isOpen}
-            aria-controls={`love-letter-${section.id}`}
-            onClick={() => {
-              setIsOpen(true)
-            }}
-            whileTap={{ scale: reduceMotion ? 1 : 0.97 }}
-            disabled={isOpen}
-            className={`mt-7 inline-flex min-h-12 items-center justify-center rounded-full border border-rose-100/35 px-7 py-3 text-sm font-semibold text-rose-50 backdrop-blur-md transition hover:border-rose-100/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200/70 disabled:cursor-default disabled:opacity-80 sm:text-base ${
-              content.enableGlow
-                ? 'bg-white/12 shadow-[0_0_34px_rgba(251,113,133,0.32)] hover:shadow-[0_0_42px_rgba(251,113,133,0.42)]'
-                : 'bg-white/8'
-            }`}
-          >
-            {isOpen ? 'Letter Opened' : content.buttonText}
-          </motion.button>
-        </div>
-
-        <div className="w-full">
-          <motion.div
-            className="relative mx-auto flex w-full max-w-3xl flex-col items-center"
-            initial={false}
-            animate={isOpen ? 'open' : 'closed'}
-          >
-            <div className="relative w-full max-w-xl pt-3 sm:pt-7 [perspective:1400px]">
-              <div className="relative aspect-[1.36/1] w-full">
-                <motion.div
-                  className="absolute inset-x-[5%] bottom-[10%] h-[68%] rounded-b-[1.6rem] border border-rose-100/35 bg-gradient-to-br from-rose-200 via-pink-100 to-orange-100 shadow-[0_26px_60px_-38px_rgba(244,63,94,0.85)]"
-                  variants={{
-                    closed: { y: 0 },
-                    open: { y: reduceMotion ? 0 : 10 },
-                  }}
-                  transition={{ duration: animationDuration, ease: sectionEase }}
-                />
-                <motion.div
-                  className="absolute inset-x-[5%] bottom-[10%] h-[68%] rounded-b-[1.6rem] bg-gradient-to-tr from-rose-400/50 via-rose-100/30 to-transparent"
-                  style={{ clipPath: 'polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%)' }}
-                  variants={{
-                    closed: { opacity: 0.86 },
-                    open: { opacity: 0.58 },
-                  }}
-                  transition={{ duration: animationDuration, ease: sectionEase }}
-                />
-                <motion.div
-                  className="absolute inset-x-[5%] bottom-[44%] h-[36%] origin-bottom rounded-t-[1.4rem] border border-rose-100/35 bg-gradient-to-br from-rose-100 via-pink-100 to-rose-200 shadow-[0_16px_45px_-34px_rgba(255,255,255,0.85)]"
-                  style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}
-                  variants={{
-                    closed: { rotateX: 0, y: 0, zIndex: 7 },
-                    open: { rotateX: reduceMotion ? 0 : -156, y: reduceMotion ? 0 : -4, zIndex: 2 },
-                  }}
-                  transition={{ duration: animationDuration, ease: sectionEase }}
-                />
-                <motion.div
-                  className="absolute inset-x-[10%] bottom-[22%] h-[55%] rounded-t-[1.3rem] border border-rose-100/65 bg-rose-50 shadow-[0_22px_54px_-40px_rgba(255,255,255,0.95)]"
-                  variants={{
-                    closed: { opacity: 0, y: reduceMotion ? 0 : 70, scale: reduceMotion ? 1 : 0.92 },
-                    open: { opacity: 1, y: reduceMotion ? 0 : -24, scale: 1 },
-                  }}
-                  transition={{
-                    duration: reduceMotion ? 0.01 : 0.78,
-                    delay: reduceMotion ? 0 : 0.16,
-                    ease: sectionEase,
-                  }}
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-8 lg:min-h-[42rem] lg:flex-row lg:items-center lg:gap-12">
+        <AnimatePresence mode="wait">
+          {!isOpen ? (
+            <motion.div
+              key="love-letter-closed"
+              initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: reduceMotion ? 0 : -16, scale: reduceMotion ? 1 : 0.98 }}
+              transition={{ duration: reduceMotion ? 0.12 : 0.55, ease: sectionEase }}
+              className="grid w-full gap-8 lg:grid-cols-[0.88fr_1.12fr] lg:items-center"
+            >
+              <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left">
+                <motion.p
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: reduceMotion ? 0.12 : 0.45, ease: sectionEase }}
+                  className="text-[11px] font-semibold uppercase tracking-[0.38em] text-rose-100/72 sm:text-xs"
                 >
-                  <div className="mx-auto mt-4 h-2 w-24 rounded-full bg-rose-200/80 sm:mt-6" />
-                  <div className="mx-auto mt-3 h-2 w-36 rounded-full bg-pink-100 sm:mt-4" />
-                </motion.div>
-                <motion.div
-                  className="absolute inset-x-[5%] bottom-[10%] h-[68%] rounded-b-[1.6rem] border border-rose-50/45 bg-gradient-to-tr from-rose-300 via-pink-100 to-orange-100"
-                  style={{ clipPath: 'polygon(0 0, 50% 58%, 100% 0, 100% 100%, 0 100%)' }}
-                  variants={{
-                    closed: { y: 0 },
-                    open: { y: reduceMotion ? 0 : 10 },
-                  }}
-                  transition={{ duration: animationDuration, ease: sectionEase }}
-                />
-                <div className="absolute bottom-[18%] left-1/2 h-10 w-10 -translate-x-1/2 rounded-full border border-rose-100/60 bg-gradient-to-br from-rose-500 to-pink-500 shadow-[0_10px_26px_-14px_rgba(244,63,94,0.95)] sm:h-12 sm:w-12" />
-              </div>
-            </div>
-
-            <AnimatePresence>
-              {isOpen ? (
-                <motion.article
-                  id={`love-letter-${section.id}`}
-                  key="love-letter-card"
-                  initial={{ opacity: 0, y: reduceMotion ? 0 : 18, scale: reduceMotion ? 1 : 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: reduceMotion ? 0 : 10 }}
-                  transition={{ duration: reduceMotion ? 0.01 : 0.62, delay: reduceMotion ? 0 : 0.32, ease: sectionEase }}
-                  className={`-mt-4 w-full rounded-[1.8rem] border border-rose-100/70 bg-rose-50 px-5 py-7 text-left text-zinc-800 shadow-[0_28px_75px_-48px_rgba(255,255,255,0.85)] sm:-mt-8 sm:px-8 sm:py-9 lg:-mt-10 ${
-                    content.enableGlow ? 'shadow-rose-200/40' : ''
+                  For Asmaa
+                </motion.p>
+                <motion.h2
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: reduceMotion ? 0.12 : 0.62, delay: reduceMotion ? 0 : 0.08, ease: sectionEase }}
+                  className={`mt-4 text-4xl font-semibold leading-[1.04] tracking-tight text-rose-50 sm:text-5xl lg:text-7xl ${
+                    content.enableGlow ? '[text-shadow:0_0_34px_rgba(251,113,133,0.42)]' : ''
                   }`}
                 >
-                  <div className="mx-auto max-w-2xl">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-rose-500/85">From Ahmed</p>
-                    <div className="mt-5 space-y-3 text-base leading-8 text-zinc-800 sm:text-lg sm:leading-9">
-                      {letterLines.map((line, index) => (
-                        <motion.p
-                          key={`${line}-${index}`}
-                          initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            duration: reduceMotion ? 0.01 : 0.45,
-                            delay: reduceMotion ? 0 : 0.52 + index * 0.12,
-                            ease: sectionEase,
-                          }}
-                        >
-                          {line}
-                        </motion.p>
-                      ))}
-                    </div>
-                    <motion.p
-                      initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: reduceMotion ? 0.01 : 0.45,
-                        delay: reduceMotion ? 0 : 0.58 + letterLines.length * 0.12,
-                        ease: sectionEase,
-                      }}
-                      className="mt-7 text-right font-semibold italic text-rose-700 sm:text-lg"
-                    >
-                      {content.signature}
-                    </motion.p>
+                  {content.title}
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: reduceMotion ? 0.12 : 0.58, delay: reduceMotion ? 0 : 0.16, ease: sectionEase }}
+                  className="mx-auto mt-5 max-w-xl text-base leading-8 text-rose-50/78 sm:text-lg lg:mx-0"
+                >
+                  {content.introText}
+                </motion.p>
+                <motion.button
+                  type="button"
+                  aria-expanded={false}
+                  aria-controls={`love-letter-${section.id}`}
+                  onClick={handleOpenLetter}
+                  whileTap={{ scale: reduceMotion ? 1 : 0.97 }}
+                  className={`mt-8 inline-flex min-h-12 items-center justify-center rounded-full border border-rose-100/38 px-8 py-3 text-sm font-semibold tracking-wide text-rose-50 backdrop-blur-md transition hover:border-rose-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200/70 sm:text-base ${
+                    content.enableGlow
+                      ? 'bg-white/12 shadow-[0_0_34px_rgba(251,113,133,0.32)] hover:shadow-[0_0_44px_rgba(251,113,133,0.44)]'
+                      : 'bg-white/8'
+                  }`}
+                >
+                  {content.buttonText}
+                </motion.button>
+              </div>
+
+              <motion.div
+                className="relative mx-auto w-full max-w-xl [perspective:1500px]"
+                initial={false}
+                animate="closed"
+              >
+                <motion.div
+                  aria-hidden
+                  className="absolute inset-x-8 top-10 h-48 rounded-full bg-rose-300/20 blur-3xl"
+                  animate={reduceMotion ? undefined : { opacity: [0.35, 0.7, 0.35], scale: [0.95, 1.05, 0.95] }}
+                  transition={reduceMotion ? undefined : { duration: 5.8, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
+                />
+                <div className="relative aspect-[1.25/1] w-full">
+                  <motion.div
+                    className="absolute inset-x-[7%] bottom-[8%] h-[68%] rounded-b-[2rem] border border-rose-100/40 bg-gradient-to-br from-rose-200 via-pink-100 to-orange-100 shadow-[0_34px_80px_-44px_rgba(244,63,94,0.95)]"
+                    initial={{ y: reduceMotion ? 0 : 10, rotateZ: reduceMotion ? 0 : -1 }}
+                    animate={{ y: 0, rotateZ: 0 }}
+                    transition={{ duration: reduceMotion ? 0.01 : 0.7, ease: sectionEase }}
+                  />
+                  <div
+                    className="absolute inset-x-[7%] bottom-[8%] h-[68%] rounded-b-[2rem] bg-gradient-to-tr from-rose-400/55 via-rose-100/30 to-transparent"
+                    style={{ clipPath: 'polygon(0 0, 50% 58%, 100% 0, 100% 100%, 0 100%)' }}
+                  />
+                  <motion.div
+                    className="absolute inset-x-[7%] bottom-[45%] h-[37%] origin-bottom rounded-t-[1.8rem] border border-rose-50/55 bg-gradient-to-br from-rose-50 via-pink-100 to-rose-200 shadow-[0_22px_50px_-38px_rgba(255,255,255,0.95)]"
+                    style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}
+                    animate={reduceMotion ? undefined : { rotateX: [0, -4, 0] }}
+                    transition={reduceMotion ? undefined : { duration: 4.8, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
+                  />
+                  <div
+                    className="absolute inset-x-[7%] bottom-[8%] h-[68%] rounded-b-[2rem] border border-rose-50/55 bg-gradient-to-tr from-rose-300 via-pink-100 to-orange-100"
+                    style={{ clipPath: 'polygon(0 0, 50% 60%, 100% 0, 100% 100%, 0 100%)' }}
+                  />
+                  <div className="absolute bottom-[18%] left-1/2 grid h-14 w-14 -translate-x-1/2 place-items-center rounded-full border border-rose-100/65 bg-gradient-to-br from-rose-500 to-pink-500 text-xl shadow-[0_14px_28px_-16px_rgba(244,63,94,0.95)]">
+                    <span aria-hidden>&hearts;</span>
                   </div>
-                </motion.article>
-              ) : null}
-            </AnimatePresence>
-          </motion.div>
-        </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="love-letter-open"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reduceMotion ? 0.01 : 0.45, ease: sectionEase }}
+              className="grid w-full gap-6 lg:grid-cols-[0.7fr_1.3fr] lg:items-center lg:gap-10"
+            >
+              <motion.div
+                className="mx-auto w-full max-w-md lg:max-w-lg"
+                initial="closed"
+                animate="open"
+                aria-hidden
+              >
+                <div className="relative aspect-[1.25/1] w-full [perspective:1500px]">
+                  <motion.div
+                    className="absolute inset-x-[7%] bottom-[9%] h-[68%] rounded-b-[2rem] border border-rose-100/35 bg-gradient-to-br from-rose-200 via-pink-100 to-orange-100 shadow-[0_30px_75px_-45px_rgba(244,63,94,0.9)]"
+                    variants={{
+                      closed: { y: 0, scale: 1 },
+                      open: { y: reduceMotion ? 0 : 20, scale: reduceMotion ? 1 : 0.96 },
+                    }}
+                    transition={{ duration, ease: sectionEase }}
+                  />
+                  <motion.div
+                    className="absolute inset-x-[11%] bottom-[19%] h-[60%] rounded-t-[1.5rem] border border-rose-100/70 bg-[#fff8ef]"
+                    variants={{
+                      closed: { opacity: 0, y: reduceMotion ? 0 : 90, scale: reduceMotion ? 1 : 0.9 },
+                      open: { opacity: 1, y: reduceMotion ? 0 : -54, scale: 1 },
+                    }}
+                    transition={{ duration: reduceMotion ? 0.01 : 0.9, delay: reduceMotion ? 0 : 0.18, ease: sectionEase }}
+                  >
+                    <div className="mx-auto mt-6 h-2 w-28 rounded-full bg-rose-200/85" />
+                    <div className="mx-auto mt-4 h-2 w-44 rounded-full bg-pink-100" />
+                    <div className="mx-auto mt-4 h-2 w-36 rounded-full bg-orange-100" />
+                  </motion.div>
+                  <motion.div
+                    className="absolute inset-x-[7%] bottom-[45%] h-[37%] origin-bottom rounded-t-[1.8rem] border border-rose-50/55 bg-gradient-to-br from-rose-50 via-pink-100 to-rose-200"
+                    style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }}
+                    variants={{
+                      closed: { rotateX: 0, y: 0, zIndex: 8 },
+                      open: { rotateX: reduceMotion ? 0 : -165, y: reduceMotion ? 0 : -6, zIndex: 2 },
+                    }}
+                    transition={{ duration, ease: sectionEase }}
+                  />
+                  <motion.div
+                    className="absolute inset-x-[7%] bottom-[9%] h-[68%] rounded-b-[2rem] border border-rose-50/55 bg-gradient-to-tr from-rose-300 via-pink-100 to-orange-100"
+                    style={{ clipPath: 'polygon(0 0, 50% 60%, 100% 0, 100% 100%, 0 100%)' }}
+                    variants={{
+                      closed: { y: 0, scale: 1 },
+                      open: { y: reduceMotion ? 0 : 20, scale: reduceMotion ? 1 : 0.96 },
+                    }}
+                    transition={{ duration, ease: sectionEase }}
+                  />
+                  <motion.div
+                    className="absolute bottom-[19%] left-1/2 grid h-12 w-12 -translate-x-1/2 place-items-center rounded-full border border-rose-100/65 bg-gradient-to-br from-rose-500 to-pink-500 text-lg shadow-[0_14px_28px_-16px_rgba(244,63,94,0.95)]"
+                    variants={{
+                      closed: { opacity: 1 },
+                      open: { opacity: reduceMotion ? 1 : 0.72 },
+                    }}
+                    transition={{ duration, ease: sectionEase }}
+                  >
+                    <span aria-hidden>&hearts;</span>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              <motion.article
+                id={`love-letter-${section.id}`}
+                initial={{ opacity: 0, y: reduceMotion ? 0 : 26, scale: reduceMotion ? 1 : 0.975 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: reduceMotion ? 0.01 : 0.78, delay: reduceMotion ? 0 : 0.42, ease: sectionEase }}
+                className={`relative mx-auto w-full max-w-3xl overflow-hidden rounded-[2rem] border px-5 py-8 sm:px-9 sm:py-11 lg:px-12 lg:py-14 ${selectedPaperStyle.article}`}
+              >
+                <div className={`pointer-events-none absolute inset-0 ${selectedPaperStyle.surface}`} />
+                <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-white/80" />
+                <div className="relative z-10">
+                  <div
+                    className={`flex flex-col items-start justify-between gap-4 border-b pb-5 sm:flex-row sm:items-center ${selectedPaperStyle.rule}`}
+                  >
+                    <div>
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.32em] ${selectedPaperStyle.muted}`}>
+                        Ahmed wrote
+                      </p>
+                      <h3 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{content.title}</h3>
+                    </div>
+
+                    {canUseMusic ? (
+                      <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleMusicToggle()
+                          }}
+                          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/70 ${selectedPaperStyle.rule} ${selectedPaperStyle.muted}`}
+                        >
+                          {isMusicPlaying ? 'Pause song' : 'Play song'}
+                        </button>
+                        {musicError ? <p className={`max-w-36 text-right text-[11px] ${selectedPaperStyle.muted}`}>{musicError}</p> : null}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className={`mt-7 space-y-6 text-[1.03rem] leading-8 sm:text-lg sm:leading-9 ${selectedPaperStyle.ink}`}>
+                    {paragraphs.map((paragraph, index) => (
+                      <motion.p
+                        key={`${paragraph}-${index}`}
+                        initial={{ opacity: 0, y: reduceMotion ? 0 : 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          duration: reduceMotion ? 0.01 : 0.5,
+                          delay: reduceMotion ? 0 : 0.68 + index * 0.14,
+                          ease: sectionEase,
+                        }}
+                      >
+                        {paragraph}
+                      </motion.p>
+                    ))}
+                  </div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: reduceMotion ? 0 : 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: reduceMotion ? 0.01 : 0.52,
+                      delay: reduceMotion ? 0 : 0.78 + paragraphs.length * 0.14,
+                      ease: sectionEase,
+                    }}
+                    className={`mt-10 border-t pt-7 text-right ${selectedPaperStyle.rule}`}
+                  >
+                    <p className={`text-sm uppercase tracking-[0.24em] ${selectedPaperStyle.muted}`}>Always</p>
+                    <p className={`mt-2 text-2xl font-semibold italic leading-tight sm:text-3xl ${selectedPaperStyle.signature}`}>
+                      {content.signature}
+                    </p>
+                  </motion.div>
+                </div>
+              </motion.article>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {canUseMusic ? (
+        <audio
+          ref={audioRef}
+          src={section.music_url ?? undefined}
+          preload="metadata"
+          onPlay={() => {
+            setIsMusicPlaying(true)
+          }}
+          onPause={() => {
+            setIsMusicPlaying(false)
+          }}
+        />
+      ) : null}
     </motion.section>
   )
 }
