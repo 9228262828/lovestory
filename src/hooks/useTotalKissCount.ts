@@ -30,7 +30,13 @@ export const useTotalKissCount = (): UseTotalKissCountResult => {
   }, [])
 
   useEffect(() => {
-    void refreshCount()
+    const timeoutId = window.setTimeout(() => {
+      void refreshCount()
+    }, 0)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
   }, [refreshCount])
 
   const handleRealtimeInsertBatch = useCallback((events: KissEvent[]) => {

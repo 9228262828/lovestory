@@ -304,7 +304,6 @@ const AnimatedNumber = ({ value, delay = 0, reduceMotion, className = '' }: Anim
     }
 
     if (reduceMotion) {
-      setDisplayValue(value)
       previousValueRef.current = value
       return
     }
@@ -325,7 +324,9 @@ const AnimatedNumber = ({ value, delay = 0, reduceMotion, className = '' }: Anim
     }
   }, [delay, reduceMotion, value])
 
-  return <span className={className}>{value === null ? '...' : numberFormatter.format(displayValue)}</span>
+  const renderedValue = reduceMotion && value !== null ? value : displayValue
+
+  return <span className={className}>{value === null ? '...' : numberFormatter.format(renderedValue)}</span>
 }
 
 const FloatingParticles = memo(({ particles, reduceMotion }: FloatingParticlesProps) => {
