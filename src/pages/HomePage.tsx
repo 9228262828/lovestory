@@ -1,5 +1,6 @@
 import { SectionRenderer } from '@/features/sections/components/SectionRenderer'
 import { usePublicSections } from '@/features/sections/hooks/usePublicSections'
+import { FinalForeverEnding } from '@/features/love-ending/components/FinalForeverEnding'
 import { LoveEntryGate } from '@/features/love-entry/components/LoveEntryGate'
 
 const HomePageContent = () => {
@@ -33,6 +34,8 @@ const HomePageContent = () => {
       ) : null}
 
       {sections.length > 0 ? <SectionRenderer sections={sections} /> : null}
+
+      <FinalForeverEnding />
     </div>
   )
 }
