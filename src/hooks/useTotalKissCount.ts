@@ -19,7 +19,7 @@ export const useTotalKissCount = (): UseTotalKissCountResult => {
     setErrorMessage(null)
 
     try {
-      const nextTotalKisses = await kissService.getTotalKissCount()
+      const nextTotalKisses = await kissService.getAllTimeKissCount()
       setTotalKisses(nextTotalKisses)
       setErrorMessage(null)
     } catch (error) {

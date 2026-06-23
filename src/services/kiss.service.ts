@@ -2,7 +2,7 @@ import { supabase } from '@/services/supabase/client'
 import type { JsonValue } from '@/types/section'
 
 const KISS_EVENTS_TABLE = 'kiss_events'
-const DAILY_KISS_STATS_TABLE = 'daily_kiss_stats'
+const KISS_COUNT_PAGE_SIZE = 1_000
 const MAX_EVENTS_PER_SECOND = 10
 const THROTTLE_WINDOW_MS = 1_000
 
@@ -16,42 +16,14 @@ export interface KissEvent {
   metadata: JsonValue | null
 }
 
-export interface DailyKissCounts {
-  dayKey: string
-  todayKisses: number
-  yesterdayKisses: number
-}
-
-interface DailyKissStatRow {
-  day: string
-  total_kisses: number
-}
-
 type KissEventListener = (event: KissEvent) => void
 
 export interface KissEventSubscription {
   unsubscribe: () => Promise<void>
 }
 
-const getUtcDayKey = (date: Date): string => {
-  return date.toISOString().slice(0, 10)
-}
-
-const getPreviousUtcDayKey = (dayKey: string): string => {
-  const date = new Date(`${dayKey}T00:00:00.000Z`)
-  date.setUTCDate(date.getUTCDate() - 1)
-  return getUtcDayKey(date)
-}
-
-const getDayRangeUtcIso = (dayKey: string): { start: string; end: string } => {
-  const start = new Date(`${dayKey}T00:00:00.000Z`)
-  const end = new Date(start)
-  end.setUTCDate(end.getUTCDate() + 1)
-
-  return {
-    start: start.toISOString(),
-    end: end.toISOString(),
-  }
+const normalizeKissValue = (value: unknown): number => {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 1
 }
 
 const toKissEvent = (value: unknown): KissEvent | null => {
@@ -69,7 +41,7 @@ const toKissEvent = (value: unknown): KissEvent | null => {
     id: record.id,
     created_at: record.created_at,
     type: typeof record.type === 'string' ? record.type : 'kiss',
-    value: typeof record.value === 'number' && Number.isFinite(record.value) ? record.value : 1,
+    value: normalizeKissValue(record.value),
     metadata: (record.metadata as JsonValue | null | undefined) ?? null,
   }
 }
@@ -88,44 +60,38 @@ const enforceInsertThrottle = () => {
   recentInsertTimestamps.push(now)
 }
 
-const getAggregatedCountForDay = async (dayKey: string): Promise<number> => {
-  const range = getDayRangeUtcIso(dayKey)
+const getAggregatedAllTimeKissCount = async (): Promise<number> => {
+  let totalKisses = 0
+  let from = 0
 
-  const { data, error } = await supabase
-    .from(KISS_EVENTS_TABLE)
-    .select('value')
-    .eq('type', 'kiss')
-    .gte('created_at', range.start)
-    .lt('created_at', range.end)
+  while (true) {
+    const to = from + KISS_COUNT_PAGE_SIZE - 1
+    const { data, error } = await supabase
+      .from(KISS_EVENTS_TABLE)
+      .select('value')
+      .eq('type', 'kiss')
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to)
 
-  if (error) {
-    throw error
+    if (error) {
+      throw error
+    }
+
+    const rows = data ?? []
+    totalKisses += rows.reduce((sum, item) => {
+      return sum + normalizeKissValue(item.value)
+    }, 0)
+
+    if (rows.length < KISS_COUNT_PAGE_SIZE) {
+      return totalKisses
+    }
+
+    from += KISS_COUNT_PAGE_SIZE
   }
-
-  return (data ?? []).reduce((sum, item) => {
-    const nextValue = typeof item.value === 'number' && Number.isFinite(item.value) ? item.value : 1
-    return sum + nextValue
-  }, 0)
-}
-
-const getAggregatedTotalKissCount = async (): Promise<number> => {
-  const { data, error } = await supabase.from(KISS_EVENTS_TABLE).select('value').eq('type', 'kiss')
-
-  if (error) {
-    throw error
-  }
-
-  return (data ?? []).reduce((sum, item) => {
-    const nextValue = typeof item.value === 'number' && Number.isFinite(item.value) ? item.value : 1
-    return sum + nextValue
-  }, 0)
 }
 
 export const kissService = {
-  getUtcDayKey,
-
-  getPreviousUtcDayKey,
-
   async createKissEvent(metadata?: JsonValue): Promise<KissEvent> {
     enforceInsertThrottle()
 
@@ -151,49 +117,8 @@ export const kissService = {
     return event
   },
 
-  async getDailyKissCounts(referenceDate: Date = new Date()): Promise<DailyKissCounts> {
-    const todayKey = getUtcDayKey(referenceDate)
-    const yesterdayKey = getPreviousUtcDayKey(todayKey)
-
-    const { data, error } = await supabase
-      .from(DAILY_KISS_STATS_TABLE)
-      .select('day,total_kisses')
-      .in('day', [todayKey, yesterdayKey])
-
-    if (!error) {
-      const rows = (data ?? []) as DailyKissStatRow[]
-      const todayRow = rows.find((row) => row.day === todayKey)
-      const yesterdayRow = rows.find((row) => row.day === yesterdayKey)
-
-      return {
-        dayKey: todayKey,
-        todayKisses: todayRow?.total_kisses ?? 0,
-        yesterdayKisses: yesterdayRow?.total_kisses ?? 0,
-      }
-    }
-
-    // Fallback for environments that only provision kiss_events.
-    const [todayKisses, yesterdayKisses] = await Promise.all([
-      getAggregatedCountForDay(todayKey),
-      getAggregatedCountForDay(yesterdayKey),
-    ])
-
-    return {
-      dayKey: todayKey,
-      todayKisses,
-      yesterdayKisses,
-    }
-  },
-
-  async getTotalKissCount(): Promise<number> {
-    const { data, error } = await supabase.from(DAILY_KISS_STATS_TABLE).select('total_kisses')
-
-    if (!error) {
-      return ((data ?? []) as DailyKissStatRow[]).reduce((sum, row) => sum + row.total_kisses, 0)
-    }
-
-    // Fallback for environments that only provision kiss_events.
-    return getAggregatedTotalKissCount()
+  async getAllTimeKissCount(): Promise<number> {
+    return getAggregatedAllTimeKissCount()
   },
 
   subscribeToKissEvents(onInsert: KissEventListener): KissEventSubscription {

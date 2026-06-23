@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { motion, useAnimationControls, useReducedMotion } from 'framer-motion'
-import { useDailyKissCount } from '@/hooks/useDailyKissCount'
+import { useTotalKissCount } from '@/hooks/useTotalKissCount'
 import { useKissStream } from '@/hooks/useKissStream'
 import { getSectionDisplayLabel } from '@/features/sections/utils/sectionDisplayLabel'
 import type { JsonValue, RomanticSection } from '@/types/section'
@@ -26,21 +26,33 @@ const getString = (value: JsonValue | undefined, fallback: string): string => {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback
 }
 
+const legacyDailyCopyPattern = /\b(today|yesterday)\b/i
+
+const sanitizeLegacyDailyCopy = (value: string, replacement: string): string => {
+  return legacyDailyCopyPattern.test(value) ? replacement : value
+}
+
 const resolveKissCounterContent = (section: RomanticSection): KissCounterContent => {
+  const fallbackSubtitle = 'Every kiss is saved forever and counted live in our all-time total.'
+  const fallbackCounterLabel = 'Total kisses shared'
+
   if (!isRecord(section.content)) {
     return {
       title: section.title || 'Kiss Counter',
-      subtitle: 'Every kiss is saved globally and counted live for today.',
+      subtitle: fallbackSubtitle,
       buttonLabel: 'Send a Kiss',
-      counterLabel: 'Kisses shared today',
+      counterLabel: fallbackCounterLabel,
     }
   }
 
+  const subtitle = getString(section.content.subtitle, fallbackSubtitle)
+  const counterLabel = getString(section.content.counterLabel, fallbackCounterLabel)
+
   return {
     title: getString(section.content.title, section.title || 'Kiss Counter'),
-    subtitle: getString(section.content.subtitle, 'Every kiss is saved globally and counted live for today.'),
+    subtitle: sanitizeLegacyDailyCopy(subtitle, fallbackSubtitle),
     buttonLabel: getString(section.content.buttonLabel, 'Send a Kiss'),
-    counterLabel: getString(section.content.counterLabel, 'Kisses shared today'),
+    counterLabel: sanitizeLegacyDailyCopy(counterLabel, fallbackCounterLabel),
   }
 }
 
@@ -49,7 +61,7 @@ export const KissCounterSection = ({ section }: KissCounterSectionProps) => {
   const pulseControls = useAnimationControls()
   const content = useMemo(() => resolveKissCounterContent(section), [section])
   const displayLabel = useMemo(() => getSectionDisplayLabel(section), [section])
-  const { todayKisses, yesterdayKisses, isLoading } = useDailyKissCount()
+  const { totalKisses, isLoading } = useTotalKissCount()
   const { sendKiss, sendErrorMessage } = useKissStream()
 
   const handleKissClick = useCallback(
@@ -97,9 +109,8 @@ export const KissCounterSection = ({ section }: KissCounterSectionProps) => {
         <div className="mx-auto mt-7 w-full max-w-sm rounded-3xl border border-rose-100/70 bg-white/70 p-5 shadow-inner shadow-rose-200/40 sm:p-6">
           <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-rose-600/85">{content.counterLabel}</p>
           <p className="mt-3 text-4xl font-semibold leading-none text-zinc-900 sm:text-5xl">
-            {isLoading ? '...' : todayKisses}
+            {isLoading ? '...' : totalKisses}
           </p>
-          <p className="mt-2 text-xs text-zinc-600">Yesterday: {yesterdayKisses}</p>
           <motion.button
             type="button"
             onClick={handleKissClick}
