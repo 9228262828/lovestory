@@ -9,6 +9,7 @@ import {
   cinematicSubtitleVariants,
 } from '@/features/sections/components/sections/cinematic/animationPresets'
 import { resolveCinematicIntroContent } from '@/features/sections/components/sections/cinematic/content'
+import { getSectionDisplayLabel } from '@/features/sections/utils/sectionDisplayLabel'
 
 interface CinematicIntroSectionProps {
   section: RomanticSection
@@ -80,6 +81,7 @@ export const CinematicIntroSection = ({ section }: CinematicIntroSectionProps) =
   const [isMusicPlaying, setIsMusicPlaying] = useState(false)
   const [musicError, setMusicError] = useState<string | null>(null)
   const content = useMemo(() => resolveCinematicIntroContent(section), [section])
+  const displayLabel = useMemo(() => getSectionDisplayLabel(section), [section])
   const particles = useMemo(() => buildParticles(), [])
   const canRenderBackgroundImage = content.backgroundMode === 'image' && Boolean(section.image_url)
   const canUseMusic = Boolean(section.music_url) && content.enableMusic
@@ -240,12 +242,14 @@ export const CinematicIntroSection = ({ section }: CinematicIntroSectionProps) =
         initial="hidden"
         animate="visible"
       >
-        <motion.p
-          variants={cinematicFadeUpVariants}
-          className="mb-5 text-xs font-semibold uppercase tracking-[0.32em] text-rose-100/75"
-        >
-          Cinematic Intro
-        </motion.p>
+        {displayLabel ? (
+          <motion.p
+            variants={cinematicFadeUpVariants}
+            className="mb-5 text-xs font-semibold uppercase tracking-[0.32em] text-rose-100/75"
+          >
+            {displayLabel}
+          </motion.p>
+        ) : null}
 
         <motion.h1
           variants={cinematicFadeUpVariants}

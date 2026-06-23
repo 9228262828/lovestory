@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { motion, useAnimationControls, useReducedMotion } from 'framer-motion'
 import { useDailyKissCount } from '@/hooks/useDailyKissCount'
 import { useKissStream } from '@/hooks/useKissStream'
+import { getSectionDisplayLabel } from '@/features/sections/utils/sectionDisplayLabel'
 import type { JsonValue, RomanticSection } from '@/types/section'
 
 interface KissCounterSectionProps {
@@ -47,6 +48,7 @@ export const KissCounterSection = ({ section }: KissCounterSectionProps) => {
   const reduceMotion = useReducedMotion()
   const pulseControls = useAnimationControls()
   const content = useMemo(() => resolveKissCounterContent(section), [section])
+  const displayLabel = useMemo(() => getSectionDisplayLabel(section), [section])
   const { todayKisses, yesterdayKisses, isLoading } = useDailyKissCount()
   const { sendKiss, sendErrorMessage } = useKissStream()
 
@@ -84,8 +86,12 @@ export const KissCounterSection = ({ section }: KissCounterSectionProps) => {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_82%_82%,rgba(244,114,182,0.2),transparent_36%)]" />
 
       <motion.div animate={pulseControls} className="relative z-10 mx-auto max-w-2xl text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-600/80">Kiss Counter</p>
-        <h2 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">{content.title}</h2>
+        {displayLabel ? (
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-600/80">{displayLabel}</p>
+        ) : null}
+        <h2 className={`${displayLabel ? 'mt-3' : ''} text-2xl font-semibold tracking-tight text-zinc-900 sm:text-4xl`}>
+          {content.title}
+        </h2>
         <p className="mx-auto mt-3 max-w-xl text-sm text-zinc-700 sm:text-base">{content.subtitle}</p>
 
         <div className="mx-auto mt-7 w-full max-w-sm rounded-3xl border border-rose-100/70 bg-white/70 p-5 shadow-inner shadow-rose-200/40 sm:p-6">

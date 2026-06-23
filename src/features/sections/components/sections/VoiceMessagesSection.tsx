@@ -1,5 +1,6 @@
 import { memo, useCallback, useMemo, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import { getSectionDisplayLabel } from '@/features/sections/utils/sectionDisplayLabel'
 import type { JsonValue, RomanticSection } from '@/types/section'
 
 interface VoiceMessagesSectionProps {
@@ -200,6 +201,7 @@ export const VoiceMessagesSection = ({ section }: VoiceMessagesSectionProps) => 
   const [timeByMessageId, setTimeByMessageId] = useState<Record<string, { currentTime: number; duration: number }>>({})
   const [playbackErrorId, setPlaybackErrorId] = useState<string | null>(null)
   const content = useMemo(() => resolveVoiceMessagesContent(section), [section])
+  const displayLabel = useMemo(() => getSectionDisplayLabel(section), [section])
   const particles = useMemo(() => (content.showParticles ? buildParticles() : []), [content.showParticles])
 
   const pauseOtherMessages = useCallback((messageId: string) => {
@@ -270,19 +272,21 @@ export const VoiceMessagesSection = ({ section }: VoiceMessagesSectionProps) => 
 
       <div className="relative z-10 mx-auto max-w-6xl">
         <div className="mx-auto max-w-3xl text-center">
-          <motion.p
-            initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0.18 : 0.5, ease: sectionEase }}
-            className="text-[11px] font-semibold uppercase tracking-[0.34em] text-rose-100/75 sm:text-xs"
-          >
-            Ahmed's voice notes
-          </motion.p>
+          {displayLabel ? (
+            <motion.p
+              initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0.18 : 0.5, ease: sectionEase }}
+              className="text-[11px] font-semibold uppercase tracking-[0.34em] text-rose-100/75 sm:text-xs"
+            >
+              {displayLabel}
+            </motion.p>
+          ) : null}
           <motion.h2
             initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduceMotion ? 0.2 : 0.65, delay: reduceMotion ? 0 : 0.08, ease: sectionEase }}
-            className={`mt-4 text-3xl font-semibold leading-tight tracking-tight text-rose-50 sm:text-5xl ${
+            className={`${displayLabel ? 'mt-4' : ''} text-3xl font-semibold leading-tight tracking-tight text-rose-50 sm:text-5xl ${
               content.enableGlow ? '[text-shadow:0_0_34px_rgba(251,113,133,0.42)]' : ''
             }`}
           >

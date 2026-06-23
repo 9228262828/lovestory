@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { getSectionDisplayLabel } from '@/features/sections/utils/sectionDisplayLabel'
 import type { JsonValue, RomanticSection } from '@/types/section'
 
 interface ReasonsILoveYouSectionProps {
@@ -107,6 +108,7 @@ const buildRevealOrder = (reasons: ReasonItem[], shouldShuffle: boolean): string
 export const ReasonsILoveYouSection = ({ section }: ReasonsILoveYouSectionProps) => {
   const reduceMotion = useReducedMotion()
   const content = useMemo(() => resolveReasonsContent(section), [section])
+  const displayLabel = useMemo(() => getSectionDisplayLabel(section), [section])
   const [revealedReasonIds, setRevealedReasonIds] = useState<Set<string>>(() => new Set())
   const [activeReasonId, setActiveReasonId] = useState<string | null>(null)
   const [revealOrder] = useState(() => buildRevealOrder(content.reasons, content.shuffle))
@@ -150,19 +152,21 @@ export const ReasonsILoveYouSection = ({ section }: ReasonsILoveYouSectionProps)
 
       <div className="relative z-10 mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-10">
         <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left">
-          <motion.p
-            initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0.16 : 0.45, ease: sectionEase }}
-            className="text-[11px] font-semibold uppercase tracking-[0.34em] text-rose-100/72 sm:text-xs"
-          >
-            One reason at a time
-          </motion.p>
+          {displayLabel ? (
+            <motion.p
+              initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0.16 : 0.45, ease: sectionEase }}
+              className="text-[11px] font-semibold uppercase tracking-[0.34em] text-rose-100/72 sm:text-xs"
+            >
+              {displayLabel}
+            </motion.p>
+          ) : null}
           <motion.h2
             initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduceMotion ? 0.18 : 0.62, delay: reduceMotion ? 0 : 0.08, ease: sectionEase }}
-            className="mt-4 text-3xl font-semibold leading-tight tracking-tight text-rose-50 [text-shadow:0_0_34px_rgba(251,113,133,0.38)] sm:text-5xl lg:text-6xl"
+            className={`${displayLabel ? 'mt-4' : ''} text-3xl font-semibold leading-tight tracking-tight text-rose-50 [text-shadow:0_0_34px_rgba(251,113,133,0.38)] sm:text-5xl lg:text-6xl`}
           >
             {content.title}
           </motion.h2>

@@ -1,5 +1,6 @@
 import { memo, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { getSectionDisplayLabel } from '@/features/sections/utils/sectionDisplayLabel'
 import type { JsonValue, RomanticSection } from '@/types/section'
 
 interface LoveLetterSectionProps {
@@ -211,6 +212,7 @@ export const LoveLetterSection = ({ section }: LoveLetterSectionProps) => {
   const [isMusicPlaying, setIsMusicPlaying] = useState(false)
   const [musicError, setMusicError] = useState<string | null>(null)
   const content = useMemo(() => resolveLoveLetterContent(section), [section])
+  const displayLabel = useMemo(() => getSectionDisplayLabel(section), [section])
   const paragraphs = useMemo(() => getLetterParagraphs(content.letter), [content.letter])
   const particles = useMemo(() => (content.showParticles ? buildParticles() : []), [content.showParticles])
   const selectedPaperStyle = paperStyles[content.paperStyle]
@@ -267,19 +269,21 @@ export const LoveLetterSection = ({ section }: LoveLetterSectionProps) => {
               className="grid w-full gap-8 lg:grid-cols-[0.88fr_1.12fr] lg:items-center"
             >
               <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left">
-                <motion.p
-                  initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: reduceMotion ? 0.12 : 0.45, ease: sectionEase }}
-                  className="text-[11px] font-semibold uppercase tracking-[0.38em] text-rose-100/72 sm:text-xs"
-                >
-                  For Asmaa
-                </motion.p>
+                {displayLabel ? (
+                  <motion.p
+                    initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: reduceMotion ? 0.12 : 0.45, ease: sectionEase }}
+                    className="text-[11px] font-semibold uppercase tracking-[0.38em] text-rose-100/72 sm:text-xs"
+                  >
+                    {displayLabel}
+                  </motion.p>
+                ) : null}
                 <motion.h2
                   initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: reduceMotion ? 0.12 : 0.62, delay: reduceMotion ? 0 : 0.08, ease: sectionEase }}
-                  className={`mt-4 text-4xl font-semibold leading-[1.04] tracking-tight text-rose-50 sm:text-5xl lg:text-7xl ${
+                  className={`${displayLabel ? 'mt-4' : ''} text-4xl font-semibold leading-[1.04] tracking-tight text-rose-50 sm:text-5xl lg:text-7xl ${
                     content.enableGlow ? '[text-shadow:0_0_34px_rgba(251,113,133,0.42)]' : ''
                   }`}
                 >
@@ -428,9 +432,11 @@ export const LoveLetterSection = ({ section }: LoveLetterSectionProps) => {
                     className={`flex flex-col items-start justify-between gap-4 border-b pb-5 sm:flex-row sm:items-center ${selectedPaperStyle.rule}`}
                   >
                     <div>
-                      <p className={`text-[11px] font-semibold uppercase tracking-[0.32em] ${selectedPaperStyle.muted}`}>
-                        Ahmed wrote
-                      </p>
+                      {displayLabel ? (
+                        <p className={`text-[11px] font-semibold uppercase tracking-[0.32em] ${selectedPaperStyle.muted}`}>
+                          {displayLabel}
+                        </p>
+                      ) : null}
                       <h3 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{content.title}</h3>
                     </div>
 

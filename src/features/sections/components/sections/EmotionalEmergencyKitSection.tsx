@@ -4,6 +4,7 @@ import {
   resolveEmotionalEmergencyKitContent,
   type EmotionalDose,
 } from '@/features/sections/components/sections/emotionalEmergencyKit/content'
+import { getSectionDisplayLabel } from '@/features/sections/utils/sectionDisplayLabel'
 import type { RomanticSection } from '@/types/section'
 
 interface EmotionalEmergencyKitSectionProps {
@@ -136,6 +137,7 @@ const DoseBurst = ({
 export const EmotionalEmergencyKitSection = ({ section }: EmotionalEmergencyKitSectionProps) => {
   const reduceMotion = useReducedMotion()
   const content = useMemo(() => resolveEmotionalEmergencyKitContent(section), [section])
+  const displayLabel = useMemo(() => getSectionDisplayLabel(section), [section])
   const floatingParticles = useMemo(() => (content.showParticles ? buildFloatingParticles() : []), [content.showParticles])
   const [activeDoseId, setActiveDoseId] = useState<string | null>(null)
   const activeDose = content.doses.find((dose) => dose.id === activeDoseId) ?? null
@@ -167,19 +169,21 @@ export const EmotionalEmergencyKitSection = ({ section }: EmotionalEmergencyKitS
             🩹
           </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0.14 : 0.45, delay: reduceMotion ? 0 : 0.06, ease: sectionEase }}
-            className="mt-5 text-[11px] font-bold uppercase tracking-[0.24em] text-rose-800/70 sm:text-xs"
-          >
-            Emergency love kit
-          </motion.p>
+          {displayLabel ? (
+            <motion.p
+              initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0.14 : 0.45, delay: reduceMotion ? 0 : 0.06, ease: sectionEase }}
+              className="mt-5 text-[11px] font-bold uppercase tracking-[0.24em] text-rose-800/70 sm:text-xs"
+            >
+              {displayLabel}
+            </motion.p>
+          ) : null}
           <motion.h2
             initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduceMotion ? 0.16 : 0.62, delay: reduceMotion ? 0 : 0.12, ease: sectionEase }}
-            className={`mt-3 text-3xl font-black leading-[1.18] tracking-tight text-rose-950 sm:text-5xl lg:text-6xl ${
+            className={`${displayLabel ? 'mt-3' : 'mt-5'} text-3xl font-black leading-[1.18] tracking-tight text-rose-950 sm:text-5xl lg:text-6xl ${
               content.enableGlow ? '[text-shadow:0_0_32px_rgba(244,114,182,0.4)]' : ''
             }`}
           >

@@ -4,6 +4,7 @@ import { EmotionalEmergencyKitContentEditor } from '@/features/sections/componen
 import { ReasonsILoveYouContentEditor } from '@/features/sections/components/admin/ReasonsILoveYouContentEditor'
 import { ThreeDGalleryContentEditor } from '@/features/sections/components/admin/ThreeDGalleryContentEditor'
 import { VoiceMessagesContentEditor } from '@/features/sections/components/admin/VoiceMessagesContentEditor'
+import { isJsonRecord } from '@/features/sections/utils/sectionDisplayLabel'
 import { UploadField } from '@/features/uploads/components/UploadField'
 import type { SectionUpsertInput } from '@/services/supabase/sections.service'
 import type { JsonValue, RomanticSection } from '@/types/section'
@@ -32,6 +33,42 @@ const parseContent = (value: string): JsonValue => {
   } catch {
     return {}
   }
+}
+
+const getInitialShowLabel = (contentText: string): boolean => {
+  const content = parseContent(contentText)
+
+  return isJsonRecord(content) && content.showLabel === true
+}
+
+const getInitialDisplayLabel = (contentText: string): string => {
+  const content = parseContent(contentText)
+
+  if (!isJsonRecord(content) || typeof content.displayLabel !== 'string') {
+    return ''
+  }
+
+  return content.displayLabel
+}
+
+const mergeDisplayLabelContent = (content: JsonValue, showLabel: boolean, displayLabel: string): JsonValue => {
+  if (!isJsonRecord(content)) {
+    return content
+  }
+
+  const normalizedDisplayLabel = displayLabel.trim()
+  const nextContent: Record<string, JsonValue> = {
+    ...content,
+    showLabel,
+  }
+
+  if (normalizedDisplayLabel.length > 0) {
+    nextContent.displayLabel = normalizedDisplayLabel
+  } else {
+    delete nextContent.displayLabel
+  }
+
+  return nextContent
 }
 
 interface SectionInitialValues {
@@ -101,6 +138,8 @@ const SectionFormFields = ({
   const [validationErrorMessage, setValidationErrorMessage] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState(initialValues.type)
   const [contentText, setContentText] = useState(initialValues.contentText)
+  const [showLabel, setShowLabel] = useState(() => getInitialShowLabel(initialValues.contentText))
+  const [displayLabel, setDisplayLabel] = useState(() => getInitialDisplayLabel(initialValues.contentText))
   const [galleryContent, setGalleryContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const [voiceMessagesContent, setVoiceMessagesContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const [reasonsLoveContent, setReasonsLoveContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
@@ -208,6 +247,13 @@ const SectionFormFields = ({
           }
         }
 
+        if (!isJsonRecord(parsedContent) && (showLabel || displayLabel.trim().length > 0)) {
+          setValidationErrorMessage('Content must be a JSON object to save public label settings.')
+          return
+        }
+
+        parsedContent = mergeDisplayLabelContent(parsedContent, showLabel, displayLabel)
+
         const enabledValue = formData.get('enabled')
         const enabled = enabledValue === 'on' || enabledValue === 'true' || enabledValue === '1'
         const imageUrl = (formData.get('image_url')?.toString() ?? '').trim() || null
@@ -290,6 +336,44 @@ const SectionFormFields = ({
               disabled={isFormBusy}
             />
             Enabled
+          </label>
+        </div>
+
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-zinc-200">Public display label</p>
+              <p className="mt-1 text-xs leading-5 text-zinc-500">
+                Hidden by default. When enabled, the public site shows this label instead of any technical section type.
+              </p>
+            </div>
+
+            <label className="flex shrink-0 items-center gap-2 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={showLabel}
+                onChange={(event) => {
+                  setShowLabel(event.currentTarget.checked)
+                }}
+                className="h-4 w-4 rounded border-zinc-600 bg-zinc-950"
+                disabled={isFormBusy}
+              />
+              Show label
+            </label>
+          </div>
+
+          <label className="mt-4 block space-y-1.5 text-sm">
+            <span className="text-zinc-300">Display label text</span>
+            <input
+              type="text"
+              value={displayLabel}
+              onChange={(event) => {
+                setDisplayLabel(event.currentTarget.value)
+              }}
+              className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-zinc-500 transition focus:ring-1"
+              placeholder="Example: A letter from Ahmed"
+              disabled={isFormBusy}
+            />
           </label>
         </div>
 

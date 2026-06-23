@@ -5,6 +5,7 @@ import { GalleryMobileCoverFlow } from '@/features/sections/components/sections/
 import { resolveThreeDGalleryContent } from '@/features/sections/components/sections/gallery3d/content'
 import { useGalleryDeck } from '@/features/sections/components/sections/gallery3d/useGalleryDeck'
 import { useIsCompactViewport } from '@/features/sections/components/sections/gallery3d/useIsCompactViewport'
+import { getSectionDisplayLabel } from '@/features/sections/utils/sectionDisplayLabel'
 import type { RomanticSection } from '@/types/section'
 
 interface ThreeDRomanticGallerySectionProps {
@@ -116,6 +117,7 @@ export const ThreeDRomanticGallerySection = ({ section }: ThreeDRomanticGalleryS
   const isCompactViewport = useIsCompactViewport()
   const dragBoundsRef = useRef<HTMLDivElement | null>(null)
   const content = useMemo(() => resolveThreeDGalleryContent(section), [section])
+  const displayLabel = useMemo(() => getSectionDisplayLabel(section), [section])
   const cardCount = content.cards.length
   const deckDensity = useMemo(() => getDeckDensity(cardCount), [cardCount])
   const containerMinHeightPx = useMemo(() => {
@@ -146,8 +148,12 @@ export const ThreeDRomanticGallerySection = ({ section }: ThreeDRomanticGalleryS
 
       <div className="relative z-10">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-600/80">3D Romantic Gallery</p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">{content.title}</h2>
+          {displayLabel ? (
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-600/80">{displayLabel}</p>
+          ) : null}
+          <h2 className={`${displayLabel ? 'mt-3' : ''} text-2xl font-semibold tracking-tight text-zinc-900 sm:text-4xl`}>
+            {content.title}
+          </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-zinc-700 sm:text-base">{content.subtitle}</p>
           <p className="mt-4 text-[11px] font-medium uppercase tracking-[0.24em] text-rose-700/75 sm:text-xs">
             {isCompactViewport ? 'Swipe left or right to explore' : 'Tap or click cards to flip • Drag to explore'}
