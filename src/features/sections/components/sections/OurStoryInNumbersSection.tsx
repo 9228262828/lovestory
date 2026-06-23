@@ -576,10 +576,10 @@ export const OurStoryInNumbersSection = ({ section, sections }: OurStoryInNumber
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(254,243,199,0.26),transparent_34%),radial-gradient(circle_at_88%_78%,rgba(251,113,133,0.2),transparent_34%)]" />
             <div className="relative z-10">
               <p className="text-[11px] font-black uppercase tracking-[0.24em] text-amber-100/76">أفضل قرار في حياتي</p>
-              <p className="mt-5 text-6xl font-black leading-none tracking-[-0.07em] text-white [text-shadow:0_0_42px_rgba(254,243,199,0.34)] sm:text-7xl">
-                04/04/2024
-              </p>
-              <p className="mt-5 text-xl font-bold leading-8 text-rose-50/82">اليوم اللي قابلت فيه أسماء ❤️</p>
+             <p className="mt-5 text-4xl font-black leading-none tracking-[-0.04em] text-white [text-shadow:0_0_42px_rgba(254,243,199,0.34)] sm:text-5xl lg:text-6xl">
+               04/04/2024
+             </p>
+              <p className="mt-5 text-xl font-bold leading-8 text-rose-50/82">اليوم اللي بدأت فيه أحلى حكاية في حياتي  ❤️</p>
             </div>
           </motion.article>
 
@@ -596,8 +596,9 @@ export const OurStoryInNumbersSection = ({ section, sections }: OurStoryInNumber
                 <br />
                 بس أجمل رقم فيهم كلهم...
                 <br />
+هو 2                <br />
                 <span className="inline-block bg-gradient-to-l from-rose-100 via-pink-200 to-amber-100 bg-clip-text text-5xl text-transparent [text-shadow:0_0_34px_rgba(251,207,232,0.2)] sm:text-6xl">
-                  هو 2 ❤️
+                   أنا وأنتِ.❤️
                 </span>
               </p>
             </div>
