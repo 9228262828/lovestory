@@ -159,7 +159,7 @@ export const useKissStream = ({ onKissEvent, onKissEvents }: UseKissStreamOption
       await kissService.createKissEvent(metadata)
       return true
     } catch (error) {
-      setSendErrorMessage(error instanceof Error ? error.message : 'Unable to send kiss right now.')
+      setSendErrorMessage(error instanceof Error ? error.message : 'مش قادرين نبعت البوسة دلوقتي، جرب تاني يا عسول ❤️')
       return false
     } finally {
       setIsSending(false)

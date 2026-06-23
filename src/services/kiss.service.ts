@@ -54,7 +54,7 @@ const enforceInsertThrottle = () => {
   }
 
   if (recentInsertTimestamps.length >= MAX_EVENTS_PER_SECOND) {
-    throw new Error('Kiss event rate limit reached. Please tap a little slower.')
+    throw new Error('استنى لحظة يا حبيبي، البوسات داخلة بسرعة قوي ❤️')
   }
 
   recentInsertTimestamps.push(now)
@@ -111,7 +111,7 @@ export const kissService = {
 
     const event = toKissEvent(data)
     if (!event) {
-      throw new Error('Failed to parse inserted kiss event.')
+      throw new Error('البوسة اتلخبطت وهي بتتسجل، جرب تبعتها تاني ❤️')
     }
 
     return event

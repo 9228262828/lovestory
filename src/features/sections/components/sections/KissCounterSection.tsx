@@ -3,7 +3,7 @@ import { motion, useAnimationControls, useReducedMotion } from 'framer-motion'
 import { useTotalKissCount } from '@/hooks/useTotalKissCount'
 import { useKissStream } from '@/hooks/useKissStream'
 import { getSectionDisplayLabel } from '@/features/sections/utils/sectionDisplayLabel'
-import type { JsonValue, RomanticSection } from '@/types/section'
+import type { RomanticSection } from '@/types/section'
 
 interface KissCounterSectionProps {
   section: RomanticSection
@@ -18,48 +18,19 @@ interface KissCounterContent {
 
 const sectionEase: [number, number, number, number] = [0.22, 1, 0.36, 1]
 
-const isRecord = (value: JsonValue): value is Record<string, JsonValue> => {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-const getString = (value: JsonValue | undefined, fallback: string): string => {
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback
-}
-
-const legacyDailyCopyPattern = /\b(today|yesterday)\b/i
-
-const sanitizeLegacyDailyCopy = (value: string, replacement: string): string => {
-  return legacyDailyCopyPattern.test(value) ? replacement : value
-}
-
-const resolveKissCounterContent = (section: RomanticSection): KissCounterContent => {
-  const fallbackSubtitle = 'Every kiss is saved forever and counted live in our all-time total.'
-  const fallbackCounterLabel = 'Total kisses shared'
-
-  if (!isRecord(section.content)) {
-    return {
-      title: section.title || 'Kiss Counter',
-      subtitle: fallbackSubtitle,
-      buttonLabel: 'Send a Kiss',
-      counterLabel: fallbackCounterLabel,
-    }
-  }
-
-  const subtitle = getString(section.content.subtitle, fallbackSubtitle)
-  const counterLabel = getString(section.content.counterLabel, fallbackCounterLabel)
-
+const resolveKissCounterContent = (): KissCounterContent => {
   return {
-    title: getString(section.content.title, section.title || 'Kiss Counter'),
-    subtitle: sanitizeLegacyDailyCopy(subtitle, fallbackSubtitle),
-    buttonLabel: getString(section.content.buttonLabel, 'Send a Kiss'),
-    counterLabel: sanitizeLegacyDailyCopy(counterLabel, fallbackCounterLabel),
+    title: 'عداد البوسات',
+    subtitle: 'كل بوسة منك بتتحفظ في قلبي وتفضل منورة عداد حبنا ❤️',
+    buttonLabel: 'ابعت بوسة يا عسول ❤️',
+    counterLabel: 'بوسة على خدي ❤️',
   }
 }
 
 export const KissCounterSection = ({ section }: KissCounterSectionProps) => {
   const reduceMotion = useReducedMotion()
   const pulseControls = useAnimationControls()
-  const content = useMemo(() => resolveKissCounterContent(section), [section])
+  const content = useMemo(() => resolveKissCounterContent(), [])
   const displayLabel = useMemo(() => getSectionDisplayLabel(section), [section])
   const { totalKisses, isLoading } = useTotalKissCount()
   const { sendKiss, sendErrorMessage } = useKissStream()

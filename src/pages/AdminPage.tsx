@@ -72,7 +72,7 @@ export const AdminPage = () => {
       </header>
 
       <section className="rounded-xl border border-rose-900/30 bg-gradient-to-r from-rose-950/40 via-pink-950/35 to-zinc-950/30 p-4 shadow-inner shadow-rose-950/20">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-300/90">Live Total Kiss Counter</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-300/90">عداد البوسات الكلي المباشر</p>
         <p className="mt-2 text-3xl font-semibold text-rose-100">{isKissCountLoading ? '...' : totalKisses}</p>
         {kissCountError ? <p className="mt-2 text-xs text-amber-300">{kissCountError}</p> : null}
       </section>

@@ -23,7 +23,7 @@ export const useTotalKissCount = (): UseTotalKissCountResult => {
       setTotalKisses(nextTotalKisses)
       setErrorMessage(null)
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to load total kiss count.')
+      setErrorMessage(error instanceof Error ? error.message : 'العداد محتاج حضن صغير وهيتحدث تاني ❤️')
     } finally {
       setIsLoading(false)
     }
