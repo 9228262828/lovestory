@@ -1,7 +1,8 @@
 import { SectionRenderer } from '@/features/sections/components/SectionRenderer'
 import { usePublicSections } from '@/features/sections/hooks/usePublicSections'
+import { LoveEntryGate } from '@/features/love-entry/components/LoveEntryGate'
 
-export const HomePage = () => {
+const HomePageContent = () => {
   const { sections, isLoading, errorMessage } = usePublicSections()
   const hasCinematicIntroAsFirstSection = sections[0]?.type === 'cinematic-intro'
 
@@ -33,5 +34,13 @@ export const HomePage = () => {
 
       {sections.length > 0 ? <SectionRenderer sections={sections} /> : null}
     </div>
+  )
+}
+
+export const HomePage = () => {
+  return (
+    <LoveEntryGate>
+      <HomePageContent />
+    </LoveEntryGate>
   )
 }
