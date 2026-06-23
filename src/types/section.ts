@@ -22,6 +22,7 @@ export type SectionType =
   | 'voice-messages'
   | 'reasons-i-love-you'
   | 'emotional-emergency-kit'
+  | 'our-story-in-numbers'
 
 export interface RomanticSection {
   id: string

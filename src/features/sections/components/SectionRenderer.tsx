@@ -11,7 +11,7 @@ export const SectionRenderer = ({ sections }: SectionRendererProps) => {
       {sections.map((section) => {
         const SectionComponent = getSectionComponent(section.type)
 
-        return <SectionComponent key={section.id} section={section} />
+        return <SectionComponent key={section.id} section={section} sections={sections} />
       })}
     </div>
   )

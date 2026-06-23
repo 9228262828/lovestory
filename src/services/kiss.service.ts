@@ -108,6 +108,19 @@ const getAggregatedCountForDay = async (dayKey: string): Promise<number> => {
   }, 0)
 }
 
+const getAggregatedTotalKissCount = async (): Promise<number> => {
+  const { data, error } = await supabase.from(KISS_EVENTS_TABLE).select('value').eq('type', 'kiss')
+
+  if (error) {
+    throw error
+  }
+
+  return (data ?? []).reduce((sum, item) => {
+    const nextValue = typeof item.value === 'number' && Number.isFinite(item.value) ? item.value : 1
+    return sum + nextValue
+  }, 0)
+}
+
 export const kissService = {
   getUtcDayKey,
 
@@ -170,6 +183,17 @@ export const kissService = {
       todayKisses,
       yesterdayKisses,
     }
+  },
+
+  async getTotalKissCount(): Promise<number> {
+    const { data, error } = await supabase.from(DAILY_KISS_STATS_TABLE).select('total_kisses')
+
+    if (!error) {
+      return ((data ?? []) as DailyKissStatRow[]).reduce((sum, row) => sum + row.total_kisses, 0)
+    }
+
+    // Fallback for environments that only provision kiss_events.
+    return getAggregatedTotalKissCount()
   },
 
   subscribeToKissEvents(onInsert: KissEventListener): KissEventSubscription {

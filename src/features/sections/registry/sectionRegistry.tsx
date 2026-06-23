@@ -4,13 +4,14 @@ import { EmotionalEmergencyKitSection } from '@/features/sections/components/sec
 import { KissCounterSection } from '@/features/sections/components/sections/KissCounterSection'
 import { LifeStartCounterSection } from '@/features/sections/components/sections/LifeStartCounterSection'
 import { LoveLetterSection } from '@/features/sections/components/sections/LoveLetterSection'
+import { OurStoryInNumbersSection } from '@/features/sections/components/sections/OurStoryInNumbersSection'
 import { PlaceholderSection } from '@/features/sections/components/sections/PlaceholderSection'
 import { ReasonsILoveYouSection } from '@/features/sections/components/sections/ReasonsILoveYouSection'
 import { ThreeDRomanticGallerySection } from '@/features/sections/components/sections/ThreeDRomanticGallerySection'
 import { VoiceMessagesSection } from '@/features/sections/components/sections/VoiceMessagesSection'
 import type { RomanticSection } from '@/types/section'
 
-type SectionComponent = ComponentType<{ section: RomanticSection }>
+type SectionComponent = ComponentType<{ section: RomanticSection; sections?: RomanticSection[] }>
 
 const sectionRegistry = new Map<string, SectionComponent>([
   ['hero', PlaceholderSection],
@@ -26,6 +27,7 @@ const sectionRegistry = new Map<string, SectionComponent>([
   ['voice-messages', VoiceMessagesSection],
   ['reasons-i-love-you', ReasonsILoveYouSection],
   ['emotional-emergency-kit', EmotionalEmergencyKitSection],
+  ['our-story-in-numbers', OurStoryInNumbersSection],
 ])
 
 export const registerSectionType = (type: string, component: SectionComponent) => {
@@ -50,6 +52,7 @@ const defaultRegistryFallback: Record<string, SectionComponent> = {
   'voice-messages': VoiceMessagesSection,
   'reasons-i-love-you': ReasonsILoveYouSection,
   'emotional-emergency-kit': EmotionalEmergencyKitSection,
+  'our-story-in-numbers': OurStoryInNumbersSection,
 }
 
 export const getSectionComponent = (type: string): SectionComponent => {
