@@ -187,9 +187,6 @@ export const CinematicIntroSection = ({ section, sections }: CinematicIntroSecti
 
   useEffect(() => {
     hasAttemptedAutoplayRef.current = false
-    setShowAutoplayPrompt(false)
-    setIntroAudioError(null)
-    setIsIntroAudioPlaying(false)
   }, [introAudioUrl, section.id])
 
   useEffect(() => {
