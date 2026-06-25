@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ScrollableAdminModal } from '@/components/ui/ScrollableAdminModal'
+import { CinematicIntroContentEditor } from '@/features/sections/components/admin/CinematicIntroContentEditor'
 import { EmotionalEmergencyKitContentEditor } from '@/features/sections/components/admin/EmotionalEmergencyKitContentEditor'
 import { ReasonsILoveYouContentEditor } from '@/features/sections/components/admin/ReasonsILoveYouContentEditor'
 import { ThreeDGalleryContentEditor } from '@/features/sections/components/admin/ThreeDGalleryContentEditor'
@@ -141,6 +142,7 @@ const SectionFormFields = ({
   const [showLabel, setShowLabel] = useState(() => getInitialShowLabel(initialValues.contentText))
   const [displayLabel, setDisplayLabel] = useState(() => getInitialDisplayLabel(initialValues.contentText))
   const [galleryContent, setGalleryContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
+  const [cinematicIntroContent, setCinematicIntroContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const [voiceMessagesContent, setVoiceMessagesContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const [reasonsLoveContent, setReasonsLoveContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
   const [emotionalKitContent, setEmotionalKitContent] = useState<JsonValue>(() => parseContent(initialValues.contentText))
@@ -151,6 +153,7 @@ const SectionFormFields = ({
     return Array.from(new Set(options)).sort((left, right) => left.localeCompare(right))
   }, [initialValues.type, typeOptions])
   const isThreeDGalleryType = selectedType.trim() === '3d-gallery'
+  const isCinematicIntroType = selectedType.trim() === 'cinematic-intro'
   const isVoiceMessagesType = selectedType.trim() === 'voice-messages'
   const isReasonsLoveType = selectedType.trim() === 'reasons-i-love-you'
   const isEmotionalKitType = selectedType.trim() === 'emotional-emergency-kit'
@@ -164,16 +167,20 @@ const SectionFormFields = ({
       const currentContent =
         previousType === '3d-gallery'
           ? galleryContent
-          : previousType === 'voice-messages'
-            ? voiceMessagesContent
-            : previousType === 'reasons-i-love-you'
-              ? reasonsLoveContent
-              : previousType === 'emotional-emergency-kit'
-                ? emotionalKitContent
-                : parseContent(contentText)
+          : previousType === 'cinematic-intro'
+            ? cinematicIntroContent
+            : previousType === 'voice-messages'
+              ? voiceMessagesContent
+              : previousType === 'reasons-i-love-you'
+                ? reasonsLoveContent
+                : previousType === 'emotional-emergency-kit'
+                  ? emotionalKitContent
+                  : parseContent(contentText)
 
       if (normalizedType === '3d-gallery') {
         setGalleryContent(currentContent)
+      } else if (normalizedType === 'cinematic-intro') {
+        setCinematicIntroContent(currentContent)
       } else if (normalizedType === 'voice-messages') {
         setVoiceMessagesContent(currentContent)
       } else if (normalizedType === 'reasons-i-love-you') {
@@ -184,6 +191,7 @@ const SectionFormFields = ({
 
       if (
         normalizedType !== '3d-gallery' &&
+        normalizedType !== 'cinematic-intro' &&
         normalizedType !== 'voice-messages' &&
         normalizedType !== 'reasons-i-love-you' &&
         normalizedType !== 'emotional-emergency-kit'
@@ -193,7 +201,7 @@ const SectionFormFields = ({
 
       setSelectedType(nextType)
     },
-    [contentText, emotionalKitContent, galleryContent, reasonsLoveContent, selectedType, voiceMessagesContent],
+    [cinematicIntroContent, contentText, emotionalKitContent, galleryContent, reasonsLoveContent, selectedType, voiceMessagesContent],
   )
 
   return (
@@ -231,6 +239,8 @@ const SectionFormFields = ({
         let parsedContent: JsonValue
         if (normalizedType === '3d-gallery') {
           parsedContent = galleryContent
+        } else if (normalizedType === 'cinematic-intro') {
+          parsedContent = cinematicIntroContent
         } else if (normalizedType === 'voice-messages') {
           parsedContent = voiceMessagesContent
         } else if (normalizedType === 'reasons-i-love-you') {
@@ -416,6 +426,12 @@ const SectionFormFields = ({
             />
             <input type="hidden" name="content" value={galleryContentText} />
           </>
+        ) : isCinematicIntroType ? (
+          <CinematicIntroContentEditor
+            initialContent={cinematicIntroContent}
+            disabled={isFormBusy}
+            onContentChange={setCinematicIntroContent}
+          />
         ) : isVoiceMessagesType ? (
           <VoiceMessagesContentEditor
             initialContent={voiceMessagesContent}

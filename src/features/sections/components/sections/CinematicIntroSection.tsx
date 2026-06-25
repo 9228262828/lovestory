@@ -13,6 +13,7 @@ import { getSectionDisplayLabel } from '@/features/sections/utils/sectionDisplay
 
 interface CinematicIntroSectionProps {
   section: RomanticSection
+  sections?: RomanticSection[]
 }
 
 interface ParticleState {
@@ -70,21 +71,27 @@ const CinematicParticleLayer = memo(({ particles, reduceMotion }: CinematicParti
 
 CinematicParticleLayer.displayName = 'CinematicParticleLayer'
 
-export const CinematicIntroSection = ({ section }: CinematicIntroSectionProps) => {
+export const CinematicIntroSection = ({ section, sections }: CinematicIntroSectionProps) => {
   const rootRef = useRef<HTMLElement | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const hasAttemptedAutoplayRef = useRef(false)
   const reduceMotion = useReducedMotion()
   const [typedText, setTypedText] = useState('')
   const [showSubtitle, setShowSubtitle] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
-  const [isMusicPlaying, setIsMusicPlaying] = useState(false)
-  const [musicError, setMusicError] = useState<string | null>(null)
+  const [isIntroAudioPlaying, setIsIntroAudioPlaying] = useState(false)
+  const [introAudioError, setIntroAudioError] = useState<string | null>(null)
+  const [showAutoplayPrompt, setShowAutoplayPrompt] = useState(false)
+  const [introAudioVolume, setIntroAudioVolume] = useState(0.72)
   const content = useMemo(() => resolveCinematicIntroContent(section), [section])
   const displayLabel = useMemo(() => getSectionDisplayLabel(section), [section])
   const particles = useMemo(() => buildParticles(), [])
   const canRenderBackgroundImage = content.backgroundMode === 'image' && Boolean(section.image_url)
-  const canUseMusic = Boolean(section.music_url) && content.enableMusic
+  const introAudioUrl = content.audioUrl || section.music_url || ''
+  const canUseIntroAudio = introAudioUrl.length > 0 && content.enableMusic
+  const isFirstPublicSection = !sections || sections[0]?.id === section.id
+  const shouldAttemptIntroAudioAutoplay = canUseIntroAudio && isFirstPublicSection && content.autoPlayMusic
 
   useEffect(() => {
     let setupTimer: number | null = null
@@ -137,28 +144,103 @@ export const CinematicIntroSection = ({ section }: CinematicIntroSectionProps) =
     }
   }, [content.title, content.typingSpeed, reduceMotion])
 
-  const tryPlayMusic = useCallback(async () => {
-    if (!canUseMusic || !audioRef.current) {
+  const pauseOtherAudioElements = useCallback(() => {
+    const introAudio = audioRef.current
+
+    if (typeof document === 'undefined' || !introAudio) {
       return
     }
 
-    try {
-      await audioRef.current.play()
-      setMusicError(null)
-      setIsMusicPlaying(true)
-    } catch {
-      setMusicError('Tap the sound button to enable music on this browser.')
-      setIsMusicPlaying(false)
-    }
-  }, [canUseMusic])
+    document.querySelectorAll('audio').forEach((audio) => {
+      if (audio !== introAudio && !audio.paused) {
+        audio.pause()
+      }
+    })
+  }, [])
+
+  const tryPlayIntroAudio = useCallback(
+    async (source: 'autoplay' | 'manual') => {
+      if (!canUseIntroAudio || !audioRef.current) {
+        return
+      }
+
+      pauseOtherAudioElements()
+      audioRef.current.volume = introAudioVolume
+
+      try {
+        await audioRef.current.play()
+        setIntroAudioError(null)
+        setShowAutoplayPrompt(false)
+        setIsIntroAudioPlaying(true)
+      } catch {
+        if (source === 'autoplay') {
+          setShowAutoplayPrompt(true)
+          setIntroAudioError(null)
+        } else {
+          setIntroAudioError('Tap again if your browser needs a direct sound gesture.')
+        }
+        setIsIntroAudioPlaying(false)
+      }
+    },
+    [canUseIntroAudio, introAudioVolume, pauseOtherAudioElements],
+  )
 
   useEffect(() => {
-    if (!content.autoPlayMusic || reduceMotion) {
+    hasAttemptedAutoplayRef.current = false
+  }, [introAudioUrl, section.id])
+
+  useEffect(() => {
+    if (!audioRef.current) {
       return
     }
 
-    void audioRef.current?.play().catch(() => undefined)
-  }, [content.autoPlayMusic, reduceMotion])
+    audioRef.current.volume = introAudioVolume
+  }, [introAudioUrl, introAudioVolume])
+
+  useEffect(() => {
+    const handleDocumentAudioPlay = (event: Event) => {
+      const introAudio = audioRef.current
+      const target = event.target
+
+      if (!introAudio || !(target instanceof HTMLAudioElement) || target === introAudio) {
+        return
+      }
+
+      if (!introAudio.paused) {
+        introAudio.pause()
+      }
+    }
+
+    document.addEventListener('play', handleDocumentAudioPlay, true)
+
+    return () => {
+      document.removeEventListener('play', handleDocumentAudioPlay, true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!shouldAttemptIntroAudioAutoplay || hasAttemptedAutoplayRef.current) {
+      return
+    }
+
+    hasAttemptedAutoplayRef.current = true
+
+    const autoplayTimeout = window.setTimeout(() => {
+      void tryPlayIntroAudio('autoplay')
+    }, 150)
+
+    return () => {
+      window.clearTimeout(autoplayTimeout)
+    }
+  }, [shouldAttemptIntroAudioAutoplay, tryPlayIntroAudio])
+
+  useEffect(() => {
+    const introAudio = audioRef.current
+
+    return () => {
+      introAudio?.pause()
+    }
+  }, [])
 
   const handleEnter = () => {
     if (isTransitioning || isCompleted) {
@@ -167,12 +249,9 @@ export const CinematicIntroSection = ({ section }: CinematicIntroSectionProps) =
 
     setIsTransitioning(true)
 
-    if (canUseMusic) {
-      void tryPlayMusic()
-    }
-
     const transitionDurationMs = reduceMotion ? 100 : 900
     window.setTimeout(() => {
+      audioRef.current?.pause()
       const nextElement = rootRef.current?.nextElementSibling
       if (nextElement instanceof HTMLElement) {
         nextElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -183,18 +262,32 @@ export const CinematicIntroSection = ({ section }: CinematicIntroSectionProps) =
     }, transitionDurationMs)
   }
 
-  const handleMusicToggle = async () => {
+  const handleIntroAudioToggle = async () => {
     if (!audioRef.current) {
       return
     }
 
-    if (audioRef.current.paused) {
-      await tryPlayMusic()
+    try {
+      if (audioRef.current.paused) {
+        await tryPlayIntroAudio('manual')
+        return
+      }
+
+      audioRef.current.pause()
+      setIsIntroAudioPlaying(false)
+    } catch {
+      setIntroAudioError('Tap again if your browser needs a direct sound gesture.')
+    }
+  }
+
+  const handleIntroAudioStop = () => {
+    if (!audioRef.current) {
       return
     }
 
     audioRef.current.pause()
-    setIsMusicPlaying(false)
+    audioRef.current.currentTime = 0
+    setIsIntroAudioPlaying(false)
   }
 
   if (isCompleted) {
@@ -289,42 +382,86 @@ export const CinematicIntroSection = ({ section }: CinematicIntroSectionProps) =
               ? 'bg-white/8 shadow-[0_0_30px_rgba(251,113,133,0.35)] hover:shadow-[0_0_36px_rgba(251,113,133,0.45)]'
               : 'bg-white/5'
           }`}
-          whileTap={{ scale: 0.98 }}
+          whileTap={{ scale: reduceMotion ? 1 : 0.98 }}
           onClick={handleEnter}
         >
           {content.buttonText}
         </motion.button>
       </motion.div>
 
-      {canUseMusic ? (
+      {canUseIntroAudio ? (
         <>
           <audio
             ref={audioRef}
-            src={section.music_url ?? undefined}
+            src={introAudioUrl}
             loop
             preload="metadata"
+            onLoadedMetadata={(event) => {
+              event.currentTarget.volume = introAudioVolume
+            }}
             onPlay={() => {
-              setIsMusicPlaying(true)
+              setIsIntroAudioPlaying(true)
+              setShowAutoplayPrompt(false)
             }}
             onPause={() => {
-              setIsMusicPlaying(false)
+              setIsIntroAudioPlaying(false)
             }}
           />
-          <div className="pointer-events-none absolute bottom-4 right-4 z-20 flex flex-col items-end gap-2 sm:bottom-6 sm:right-8">
-            <button
-              type="button"
-              onClick={() => {
-                void handleMusicToggle()
-              }}
-              className="pointer-events-auto rounded-full border border-rose-100/35 bg-black/25 px-3 py-1.5 text-xs font-medium text-rose-100 backdrop-blur-md transition hover:border-rose-100/60"
-            >
-              {isMusicPlaying ? 'Mute Music' : 'Play Music'}
-            </button>
-            {musicError ? (
-              <p className="max-w-56 rounded-md border border-amber-300/35 bg-amber-950/45 px-2 py-1 text-[11px] text-amber-100">
-                {musicError}
-              </p>
-            ) : null}
+          <div className="pointer-events-none absolute inset-x-3 bottom-4 z-20 flex justify-center sm:inset-x-auto sm:right-8 sm:justify-end">
+            <div className="pointer-events-auto w-full max-w-sm rounded-[1.4rem] border border-rose-100/28 bg-black/28 p-3 text-rose-50 shadow-[0_20px_60px_-38px_rgba(251,113,133,0.9)] backdrop-blur-md sm:w-80">
+              {showAutoplayPrompt ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void tryPlayIntroAudio('manual')
+                  }}
+                  className="mb-3 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-rose-100/45 bg-rose-50/14 px-4 py-2 text-sm font-semibold text-rose-50 transition hover:border-rose-100/70 hover:bg-rose-50/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-100/70"
+                >
+                  شغّلي الصوت ❤️
+                </button>
+              ) : null}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleIntroAudioToggle()
+                  }}
+                  className="inline-flex min-h-10 flex-1 items-center justify-center rounded-full border border-rose-100/35 bg-white/10 px-3 py-2 text-xs font-semibold text-rose-50 transition hover:border-rose-100/65 hover:bg-white/16 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-100/70"
+                >
+                  {isIntroAudioPlaying ? 'Pause audio' : 'Play audio'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleIntroAudioStop}
+                  className="inline-flex min-h-10 items-center justify-center rounded-full border border-rose-100/25 bg-white/8 px-3 py-2 text-xs font-semibold text-rose-100/82 transition hover:border-rose-100/55 hover:bg-white/14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-100/70"
+                >
+                  Stop
+                </button>
+              </div>
+
+              <label className="mt-3 flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-rose-100/70">
+                <span>Volume</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={introAudioVolume}
+                  onChange={(event) => {
+                    setIntroAudioVolume(event.currentTarget.valueAsNumber)
+                  }}
+                  className="h-8 min-w-0 flex-1 accent-rose-200"
+                  aria-label="Intro audio volume"
+                />
+              </label>
+
+              {introAudioError ? (
+                <p className="mt-2 rounded-md border border-amber-300/35 bg-amber-950/45 px-2 py-1 text-[11px] leading-5 text-amber-100">
+                  {introAudioError}
+                </p>
+              ) : null}
+            </div>
           </div>
         </>
       ) : null}
